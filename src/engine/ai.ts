@@ -72,8 +72,8 @@ export const TUNED_WEIGHTS: Weights = {
   ...BASE_WEIGHTS, races: 2.5, ring: 3, ringLate: 4, presence: 10, presence6: 40, token: 6,
 };
 
-/** Retuned by self-play against Hard: skills matter more and early ring steps less (wins about 67% with Hard's search). */
-export const IMPOSSIBLE_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill: 4.8 };
+/** Retuned by self-play, first against Hard and then against itself: skills, units and alliances matter more, early ring steps less. */
+export const IMPOSSIBLE_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill: 4.8, unit: 1.92, token: 9.6 };
 
 const SHALLOW = { depth: 1, replies: 1, shortlist: Infinity, peek: 0 };
 
