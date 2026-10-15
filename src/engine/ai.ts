@@ -77,7 +77,7 @@ export const IMPOSSIBLE_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill:
 
 const SHALLOW = { depth: 1, replies: 1, shortlist: Infinity, peek: 0 };
 
-// Impossible also expects the rival's best answer; it wins about 75% of its games against Hard and 80% against Normal.
+// Impossible also expects the rival's best answer; it wins about 80% of its games against Hard.
 
 export const LEVELS: Record<AiLevel, LevelConfig> = {
   easy: { blunder: 0.4, noise: 20, samples: 1, beam: 2, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },

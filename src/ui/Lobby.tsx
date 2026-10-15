@@ -22,7 +22,7 @@ const AI_LEVELS: { value: AiLevel; hint: string }[] = [
   { value: 'easy', hint: 'Per aprendre a jugar.' },
   { value: 'normal', hint: 'Un rival raonable.' },
   { value: 'hard', hint: 'No perdona.' },
-  { value: 'impossible', hint: 'Preveu la teva resposta abans de jugar. Guanya el Difícil 3 de cada 4 cops.' },
+  { value: 'impossible', hint: 'Preveu la teva resposta abans de jugar. Guanya el Difícil 4 de cada 5 cops.' },
 ];
 
 export function Lobby({ onEnterRoom, onLocal, onAi }: Props) {
