@@ -53,11 +53,16 @@ export interface Weights {
   economySlope: number;
   threat: number;
   extraTurn: number;
+  /** Regions held by a single unit and no fortress: one enemy action takes them. */
+  fragile: number;
+  /** Being ahead on regions late in chapter 3, when that decides the game. */
+  endLead: number;
 }
 
 export const BASE_WEIGHTS: Weights = {
   ring: 6, ringLate: 9, races: 1, presence: 7, presence6: 30, unit: 1.2, unitCap: 3, fortress: 4, mapSlope: 0.35,
   coin: 2, skill: 3, flexSkill: 3, chain: 2.5, token: 4, economySlope: 0.3, threat: 1, extraTurn: 6,
+  fragile: 0, endLead: 0,
 };
 
 /** Hard plays with weights tuned by self-play; it wins about 70% of its games against Normal. */
@@ -99,6 +104,7 @@ function score(state: GameState, side: Side, w: Weights): number {
   for (const r of Object.values(state.regions)) {
     board += Math.min(r.units[side], w.unitCap) * w.unit;
     if (r.fortress === side) board += w.fortress;
+    else if (r.units[side] === 1) board -= w.fragile;
   }
   v += board * mapWeight;
 
@@ -126,6 +132,10 @@ export function evaluate(state: GameState, side: Side, w: Weights = BASE_WEIGHTS
   // Racing threats: a rival one or two steps from any victory must be stopped now.
   v -= (threat(state, opp) - threat(state, side) * 0.5) * w.threat;
   if (state.current === side && !state.prompt) v += w.extraTurn;
+  if (state.chapter === 3 && w.endLead) {
+    const taken = state.slots.filter((slot) => slot.taken).length / state.slots.length;
+    v += w.endLead * taken * Math.sign(presence(state, side) - presence(state, opp));
+  }
   return v;
 }
 
