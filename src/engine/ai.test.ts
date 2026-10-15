@@ -66,4 +66,12 @@ describe('AI', () => {
     }
     expect(wins).toBeGreaterThanOrEqual(4);
   }, 120_000);
+
+  it('sees a win that needs a card and then a choice', () => {
+    // Seed 7000, turn 40: playing slot 8 lets Sauron play a red card and win by placing it in Gondor.
+    const rand = seeded(7001);
+    let s = newGame(7000);
+    while (!(s.turn === 40 && !s.prompt)) s = applyAction(s, chooseAction(s, 'hard', rand));
+    expect(chooseAction(s, 'impossible', seeded(1))).not.toEqual({ type: 'takeCard', slot: 8, mode: 'play' });
+  }, 30_000);
 });

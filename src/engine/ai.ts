@@ -24,6 +24,8 @@ export interface LevelConfig {
   replies: number;
   /** Candidate moves given the deep search, picked by a quick first pass. */
   shortlist: number;
+  /** Pending decisions looked through when ranking options, so a card is judged by its best follow-up. */
+  peek: number;
   weights: Weights;
 }
 
@@ -73,7 +75,7 @@ export const TUNED_WEIGHTS: Weights = {
 /** Retuned by self-play against Hard: skills matter more and early ring steps less (wins about 67% with Hard's search). */
 export const IMPOSSIBLE_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill: 4.8 };
 
-const SHALLOW = { depth: 1, replies: 1, shortlist: Infinity };
+const SHALLOW = { depth: 1, replies: 1, shortlist: Infinity, peek: 0 };
 
 // Impossible also expects the rival's best answer; it wins about 75% of its games against Hard and 80% against Normal.
 
@@ -81,7 +83,7 @@ export const LEVELS: Record<AiLevel, LevelConfig> = {
   easy: { blunder: 0.4, noise: 20, samples: 1, beam: 2, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },
   normal: { blunder: 0, noise: 2, samples: 1, beam: 3, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },
   hard: { blunder: 0, noise: 0, samples: 2, beam: 3, nodes: 400, ...SHALLOW, weights: TUNED_WEIGHTS },
-  impossible: { blunder: 0, noise: 0, samples: 6, beam: 3, nodes: 3000, depth: 2, replies: 4, shortlist: 6, weights: IMPOSSIBLE_WEIGHTS },
+  impossible: { blunder: 0, noise: 0, samples: 6, beam: 3, nodes: 3000, depth: 2, replies: 4, shortlist: 6, peek: 1, weights: IMPOSSIBLE_WEIGHTS },
 };
 
 // ---------- evaluation ----------
@@ -202,9 +204,21 @@ function bestTurnValue(state: GameState, side: Side, beam: number, budget: Budge
   return best;
 }
 
+/**
+ * How promising a position is for `side` when choosing which options to explore. A pending decision is judged by
+ * its best answer (up to `depth` decisions deep): a card that wins once its units are placed must not look ordinary.
+ */
+function rank(state: GameState, side: Side, depth: number, budget: Budget, w: Weights): number {
+  if (!state.prompt || state.winner || depth === 0 || state.current !== side) return evaluate(state, side, w);
+  const actions = legalActions(state);
+  budget.nodes -= actions.length;
+  return Math.max(...actions.map((a) => rank(applyAction(state, a), side, depth - 1, budget, w)));
+}
+
 /** Positions where the current turn can end, each scored for the player making it, best first. */
-function turnEnds(state: GameState, beam: number, budget: Budget, w: Weights): { s: GameState; v: number }[] {
+function turnEnds(state: GameState, cfg: LevelConfig, budget: Budget): { s: GameState; v: number }[] {
   const mover = state.current;
+  const w = cfg.weights;
   const ends: { s: GameState; v: number }[] = [];
   const walk = (s: GameState) => {
     if (s.winner || s.turn !== state.turn || budget.nodes <= 0) {
@@ -213,11 +227,11 @@ function turnEnds(state: GameState, beam: number, budget: Budget, w: Weights): {
     }
     let children = legalActions(s).map((a) => applyAction(s, a));
     budget.nodes -= children.length;
-    if (children.length > beam) {
+    if (children.length > cfg.beam) {
       children = children
-        .map((c) => ({ c, v: evaluate(c, mover, w) }))
+        .map((c) => ({ c, v: rank(c, mover, cfg.peek, budget, w) }))
         .sort((a, b) => b.v - a.v)
-        .slice(0, beam)
+        .slice(0, cfg.beam)
         .map((x) => x.c);
     }
     for (const child of children) walk(child);
@@ -229,7 +243,7 @@ function turnEnds(state: GameState, beam: number, budget: Budget, w: Weights): {
 /** Value for `side` after `turns` more turns, each player finishing its turn in its own best way. */
 function lookahead(state: GameState, side: Side, turns: number, cfg: LevelConfig, budget: Budget): number {
   if (state.winner || turns === 0 || budget.nodes <= 0) return evaluate(state, side, cfg.weights);
-  const ends = turnEnds(state, cfg.beam, budget, cfg.weights).slice(0, cfg.replies);
+  const ends = turnEnds(state, cfg, budget).slice(0, cfg.replies);
   const values = ends.map((e) => lookahead(e.s, side, turns - 1, cfg, budget));
   return state.current === side ? Math.max(...values) : Math.min(...values);
 }
