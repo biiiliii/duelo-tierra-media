@@ -1,0 +1,122 @@
+{
+  "source": "rules.pdf p.7",
+  "regions": [
+    {
+      "id": "lindon",
+      "name": "Lindon",
+      "banner": "teal_ship",
+      "pos": [
+        8,
+        14
+      ]
+    },
+    {
+      "id": "arnor",
+      "name": "Arnor",
+      "banner": "black_winged_helm",
+      "pos": [
+        36,
+        8
+      ]
+    },
+    {
+      "id": "rhovanion",
+      "name": "Rhovanion",
+      "banner": "green_leaf",
+      "pos": [
+        78,
+        16
+      ]
+    },
+    {
+      "id": "enedwaith",
+      "name": "Enedwaith",
+      "banner": "purple_swirl",
+      "pos": [
+        24,
+        44
+      ]
+    },
+    {
+      "id": "rohan",
+      "name": "Rohan",
+      "banner": "green_white_horse",
+      "pos": [
+        56,
+        48
+      ]
+    },
+    {
+      "id": "gondor",
+      "name": "Gondor",
+      "banner": "blue_white_tree",
+      "pos": [
+        36,
+        82
+      ]
+    },
+    {
+      "id": "mordor",
+      "name": "Mordor",
+      "banner": "red_gold_sun",
+      "pos": [
+        82,
+        80
+      ]
+    }
+  ],
+  "connections": [
+    [
+      "lindon",
+      "arnor"
+    ],
+    [
+      "arnor",
+      "enedwaith"
+    ],
+    [
+      "arnor",
+      "rhovanion"
+    ],
+    [
+      "enedwaith",
+      "rhovanion"
+    ],
+    [
+      "enedwaith",
+      "rohan"
+    ],
+    [
+      "enedwaith",
+      "gondor"
+    ],
+    [
+      "rohan",
+      "rhovanion"
+    ],
+    [
+      "rohan",
+      "gondor"
+    ],
+    [
+      "rohan",
+      "mordor"
+    ],
+    [
+      "gondor",
+      "mordor"
+    ]
+  ],
+  "setup": {
+    "fellowship": {
+      "arnor": 2
+    },
+    "sauron": {
+      "mordor": 2
+    }
+  },
+  "pieces_per_side": {
+    "units": 15,
+    "fortresses": 7
+  }
+}

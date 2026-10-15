@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+.playwright-mcp
+.vercel
+.env*
+*.tsbuildinfo
+# Publisher material and local tooling stay out of the public repo.
+*.pdf
+fotos/
+.claude/
+.agents/
+skills-lock.json

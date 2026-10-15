@@ -1,0 +1,667 @@
+{
+  "chapter": 1,
+  "source_image": "capitol1",
+  "card_count": 23,
+  "orientation_note": "In the photo the cards lie rotated 90°; the coloured effect band (shown on the right side in the photo) is the card's top edge. 'position' refers to the photo: column (left/middle/right) and row counted from the top.",
+  "cards": [
+    {
+      "id": "cap1_01",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum on a rock in a cave",
+      "position": {
+        "column": "left",
+        "row": 1
+      },
+      "cost": {
+        "coins": 1,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 1,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "fish"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_02",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum on a rock in a cave",
+      "position": {
+        "column": "left",
+        "row": 2
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "heart"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 1,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "teapot"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_03",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum on a rock in a cave",
+      "position": {
+        "column": "left",
+        "row": 3
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "fist"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 1,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "horse_head"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_04",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum on a rock in a cave",
+      "position": {
+        "column": "left",
+        "row": 4
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 1,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_05",
+      "color": "green",
+      "name_or_category": "Race card",
+      "artwork": "Hooded ranger in a forest",
+      "position": {
+        "column": "left",
+        "row": 5
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "book"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": {
+          "icon": "horn",
+          "race": "men"
+        },
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "horseshoe"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_06",
+      "color": "green",
+      "name_or_category": "Race card",
+      "artwork": "Dwarf warrior with a beard",
+      "position": {
+        "column": "left",
+        "row": 6
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "crown"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": {
+          "icon": "hammer",
+          "race": "dwarves"
+        },
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "anvil"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_07",
+      "color": "green",
+      "name_or_category": "Race card",
+      "artwork": "Blond elf archer",
+      "position": {
+        "column": "left",
+        "row": 7
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "book"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": {
+          "icon": "phial",
+          "race": "elves"
+        },
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "harp"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_08",
+      "color": "green",
+      "name_or_category": "Race card",
+      "artwork": "Two hobbits in the snow",
+      "position": {
+        "column": "left",
+        "row": 8
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "crown"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": {
+          "icon": "pipe",
+          "race": "hobbits"
+        },
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "cooking_pot"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_09",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Black rider silhouette in a green-lit forest",
+      "position": {
+        "column": "middle",
+        "row": 1
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "mask"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_10",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Armoured knight with banner and spears",
+      "position": {
+        "column": "middle",
+        "row": 2
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "crown"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_11",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Bearded smith at a forge",
+      "position": {
+        "column": "middle",
+        "row": 3
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "fist"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_12",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Dead Marshes with a submerged face",
+      "position": {
+        "column": "middle",
+        "row": 4
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "heart"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_13",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Dead Marshes with a submerged face",
+      "position": {
+        "column": "middle",
+        "row": 5
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "heart"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_14",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Bearded smith at a forge",
+      "position": {
+        "column": "middle",
+        "row": 6
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "fist"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_15",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Hooded woman reading in a library",
+      "position": {
+        "column": "middle",
+        "row": 7
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "book"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_16",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Black rider silhouette in a green-lit forest",
+      "position": {
+        "column": "middle",
+        "row": 8
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "mask"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_17",
+      "color": "yellow",
+      "name_or_category": "Coins card",
+      "artwork": "Pile of gold coins on a stone floor",
+      "position": {
+        "column": "right",
+        "row": 1
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 2,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_18",
+      "color": "yellow",
+      "name_or_category": "Coins card",
+      "artwork": "Pile of gold coins on a stone floor",
+      "position": {
+        "column": "right",
+        "row": 2
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 2,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_19",
+      "color": "yellow",
+      "name_or_category": "Coins card",
+      "artwork": "Pile of gold coins on a stone floor",
+      "position": {
+        "column": "right",
+        "row": 3
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 2,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_20",
+      "color": "yellow",
+      "name_or_category": "Coins card",
+      "artwork": "Pile of gold coins on a stone floor",
+      "position": {
+        "column": "right",
+        "row": 4
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 2,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_21",
+      "color": "red",
+      "name_or_category": "Military card",
+      "artwork": "Fiery hall with a demon emblem on a doorway",
+      "position": {
+        "column": "right",
+        "row": 5
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": {
+          "units": 1,
+          "region_choice": [
+            "lindon",
+            "arnor"
+          ]
+        },
+        "special_icons": null,
+        "chain_symbol_granted": "sword"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_22",
+      "color": "red",
+      "name_or_category": "Military card",
+      "artwork": "Warriors with a White Tree shield in battle",
+      "position": {
+        "column": "right",
+        "row": 6
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": {
+          "units": 1,
+          "region_choice": [
+            "enedwaith",
+            "rhovanion"
+          ]
+        },
+        "special_icons": null,
+        "chain_symbol_granted": "helmet"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap1_23",
+      "color": "red",
+      "name_or_category": "Military card",
+      "artwork": "Orc/goblin with a curved blade attacking",
+      "position": {
+        "column": "right",
+        "row": 7
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": {
+          "units": 1,
+          "region_choice": [
+            "gondor",
+            "rohan"
+          ]
+        },
+        "special_icons": null,
+        "chain_symbol_granted": "bow_and_arrow"
+      },
+      "uncertain": []
+    }
+  ],
+  "symbols_file": "symbols.json"
+}

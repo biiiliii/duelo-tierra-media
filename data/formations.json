@@ -1,0 +1,157 @@
+{
+  "source": "rules.pdf p.3",
+  "note": "Rows listed top (deepest) to bottom (initially accessible). x is in half-card units; a card is covered by any card in the next row with |dx| <= 1.",
+  "chapters": {
+    "1": [
+      {
+        "x": [
+          -1,
+          1
+        ],
+        "faceUp": true
+      },
+      {
+        "x": [
+          -2,
+          0,
+          2
+        ],
+        "faceUp": false
+      },
+      {
+        "x": [
+          -3,
+          -1,
+          1,
+          3
+        ],
+        "faceUp": true
+      },
+      {
+        "x": [
+          -4,
+          -2,
+          0,
+          2,
+          4
+        ],
+        "faceUp": false
+      },
+      {
+        "x": [
+          -5,
+          -3,
+          -1,
+          1,
+          3,
+          5
+        ],
+        "faceUp": true
+      }
+    ],
+    "2": [
+      {
+        "x": [
+          -5,
+          -3,
+          -1,
+          1,
+          3,
+          5
+        ],
+        "faceUp": true
+      },
+      {
+        "x": [
+          -4,
+          -2,
+          0,
+          2,
+          4
+        ],
+        "faceUp": false
+      },
+      {
+        "x": [
+          -3,
+          -1,
+          1,
+          3
+        ],
+        "faceUp": true
+      },
+      {
+        "x": [
+          -2,
+          0,
+          2
+        ],
+        "faceUp": false
+      },
+      {
+        "x": [
+          -1,
+          1
+        ],
+        "faceUp": true
+      }
+    ],
+    "3": [
+      {
+        "x": [
+          -1,
+          1
+        ],
+        "faceUp": true
+      },
+      {
+        "x": [
+          -2,
+          0,
+          2
+        ],
+        "faceUp": false
+      },
+      {
+        "x": [
+          -3,
+          -1,
+          1,
+          3
+        ],
+        "faceUp": true
+      },
+      {
+        "x": [
+          -2,
+          2
+        ],
+        "faceUp": false
+      },
+      {
+        "x": [
+          -3,
+          -1,
+          1,
+          3
+        ],
+        "faceUp": true
+      },
+      {
+        "x": [
+          -2,
+          0,
+          2
+        ],
+        "faceUp": false
+      },
+      {
+        "x": [
+          -1,
+          1
+        ],
+        "faceUp": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,134 @@
+/* Lobby, join gate and online-room chrome. Uses the tokens defined in styles.css. */
+
+.lobby {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3.5rem 1rem 3rem;
+  gap: 2rem;
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 12%, rgba(224, 180, 74, 0.13), transparent 70%),
+    radial-gradient(ellipse at 50% 0%, #22323d 0%, var(--table) 45%, var(--table-deep) 100%);
+}
+
+.lobby-hero { text-align: center; max-width: 40rem; }
+.lobby-hero h1 {
+  font-size: clamp(2.2rem, 6vw, 3.8rem);
+  line-height: 1.05;
+  color: #f1e3bd;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5), 0 0 30px rgba(224, 180, 74, 0.25);
+}
+.lobby-hero p { margin: 0.8rem 0 0; color: var(--ink-soft); font-size: 1.1rem; }
+
+.lobby-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  width: min(60rem, 100%);
+  align-items: start;
+}
+.lobby-side { display: flex; flex-direction: column; gap: 1.25rem; }
+@media (max-width: 760px) { .lobby-grid { grid-template-columns: 1fr; } }
+
+.lobby-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.3rem 1.4rem 1.4rem;
+  background: linear-gradient(180deg, #273843 0%, #202e37 100%);
+  border: 1px solid var(--panel-line);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgba(224, 180, 74, 0.12), 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.lobby-card h2 { font-size: 1.5rem; color: #f1e3bd; margin: 0; }
+.lobby-card p { margin: 0; color: var(--ink-soft); }
+.lobby-narrow { width: min(26rem, 100%); }
+
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
+.field span { color: var(--ink-soft); font-size: 0.9rem; }
+.field input, .invite-row input {
+  font: inherit;
+  color: var(--ink);
+  background: #172229;
+  border: 1px solid #415663;
+  border-radius: 7px;
+  padding: 0.55rem 0.7rem;
+}
+.field input:focus-visible, .invite-row input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.code-input { font-family: var(--display); font-size: 1.6rem !important; letter-spacing: 0.3em; text-align: center; }
+
+.side-pick { border: 0; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.side-pick legend { color: var(--ink-soft); font-size: 0.9rem; margin-bottom: 0.4rem; }
+.side-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #3a4e5a;
+  border-left: 5px solid #3a4e5a;
+  background: #1d2a32;
+  cursor: pointer;
+}
+.side-option input { grid-row: span 2; accent-color: var(--gold); }
+.side-option b { font-family: var(--display); font-weight: 400; font-size: 1.1rem; }
+.side-option span { color: var(--ink-soft); font-size: 0.9rem; }
+.side-option-fellowship { border-left-color: var(--fellowship); }
+.side-option-sauron { border-left-color: var(--sauron); }
+.side-option-random { border-left-color: var(--gold); }
+.side-option.checked { background: #263843; border-color: #58707e; }
+.side-option-fellowship.checked b { color: var(--fellowship); }
+.side-option-sauron.checked b { color: var(--sauron); }
+.side-option-random.checked b { color: var(--gold); }
+
+/* Segmented pickers (AI level and side). */
+.seg-pick { border: 0; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+.seg-pick legend { color: var(--ink-soft); font-size: 0.9rem; margin-bottom: 0.35rem; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid #3a4e5a; border-radius: 8px; overflow: hidden; }
+.seg label {
+  position: relative;
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+  background: #1d2a32;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 1rem;
+}
+.seg label + label { border-left: 1px solid #3a4e5a; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: -2px; }
+.seg label.checked { background: #2c404c; color: var(--gold); box-shadow: inset 0 -3px 0 var(--gold); }
+.seg label.seg-fellowship.checked { color: var(--fellowship); box-shadow: inset 0 -3px 0 var(--fellowship); }
+.seg label.seg-sauron.checked { color: var(--sauron); box-shadow: inset 0 -3px 0 var(--sauron); }
+.seg-hint { font-size: 0.88rem; font-style: italic; }
+
+.lobby-primary {
+  background: linear-gradient(180deg, #8f6b20, #6e5115);
+  border-color: var(--gold);
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+}
+.lobby-primary:hover:not(:disabled) { background: linear-gradient(180deg, #a07a26, #7d5c18); }
+.lobby-error { color: #ffb4a0; margin: 0; text-align: center; }
+.lobby-loading { color: var(--ink-soft); margin-top: 20vh; }
+.link-button { background: none; border: 0; color: var(--ink-soft); text-decoration: underline; }
+.link-button:hover:not(:disabled) { background: none; color: var(--ink); }
+
+.room-code { font-family: var(--display); letter-spacing: 0.15em; color: var(--gold); font-weight: 400; }
+
+/* ---------- online chrome inside the game screen ---------- */
+.room-chip {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid #4a606d;
+  border-radius: 6px;
+  color: var(--ink-soft);
+}
+.room-chip b { font-family: var(--display); font-weight: 400; letter-spacing: 0.12em; color: var(--gold); }
+.vs { color: var(--ink-soft); font-size: 0.92rem; align-self: center; }
+.vs-fellowship { color: var(--fellowship); font-weight: 700; }
+.vs-sauron { color: var(--sauron); font-weight: 700; }
+.invite-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.invite-row input { flex: 1; min-width: 0; }

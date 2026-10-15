@@ -1,0 +1,176 @@
+{
+  "source": "playeraid.pdf + fotos/llocs.jpeg",
+  "note": "Every key location also costs +1 coin per fortress you already have on the board.",
+  "locations": [
+    {
+      "id": "helms_deep",
+      "name": "Abismo de Helm",
+      "region": "rohan",
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "mask",
+          "mask",
+          "crown",
+          "crown",
+          "book"
+        ]
+      },
+      "effects": [
+        {
+          "type": "place_units",
+          "n": 3,
+          "region": "rohan"
+        }
+      ]
+    },
+    {
+      "id": "barad_dur",
+      "name": "Barad-dûr",
+      "region": "mordor",
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "heart",
+          "heart",
+          "heart",
+          "crown",
+          "crown",
+          "book"
+        ]
+      },
+      "effects": [
+        {
+          "type": "play_from_discard"
+        }
+      ]
+    },
+    {
+      "id": "isengard",
+      "name": "Isengard",
+      "region": "enedwaith",
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "mask",
+          "heart",
+          "heart",
+          "heart",
+          "book"
+        ]
+      },
+      "effects": [
+        {
+          "type": "discard_opponent_grey"
+        },
+        {
+          "type": "ring",
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "minas_tirith",
+      "name": "Minas Tirith",
+      "region": "gondor",
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "mask",
+          "mask",
+          "fist",
+          "book",
+          "book"
+        ]
+      },
+      "effects": [
+        {
+          "type": "place_units",
+          "n": 1,
+          "region": "gondor"
+        },
+        {
+          "type": "ring",
+          "n": 2
+        }
+      ]
+    },
+    {
+      "id": "bree",
+      "name": "Bree",
+      "region": "arnor",
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "fist",
+          "fist",
+          "fist",
+          "heart",
+          "heart",
+          "crown"
+        ]
+      },
+      "effects": [
+        {
+          "type": "place_units",
+          "n": 2,
+          "region": "arnor"
+        },
+        {
+          "type": "move",
+          "n": 2
+        }
+      ]
+    },
+    {
+      "id": "erebor",
+      "name": "Erebor",
+      "region": "rhovanion",
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "fist",
+          "fist",
+          "heart",
+          "crown",
+          "book"
+        ]
+      },
+      "effects": [
+        {
+          "type": "coins",
+          "n": 5
+        },
+        {
+          "type": "move",
+          "n": 1
+        }
+      ]
+    },
+    {
+      "id": "grey_havens",
+      "name": "Puertos Grises",
+      "region": "lindon",
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "fist",
+          "fist",
+          "fist",
+          "crown",
+          "crown",
+          "book"
+        ]
+      },
+      "effects": [
+        {
+          "type": "alliance_any_race"
+        }
+      ]
+    }
+  ]
+}

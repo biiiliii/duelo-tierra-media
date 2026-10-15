@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "jsx": "react-jsx",
+    "noEmit": false,
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": ["api", "data/*.json"]
+}

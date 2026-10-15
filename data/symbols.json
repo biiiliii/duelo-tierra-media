@@ -1,0 +1,119 @@
+{
+  "skill_symbols": {
+    "mask": {
+      "description": "Black circle, half-dark/half-white face",
+      "name_es": "Astucia"
+    },
+    "crown": {
+      "description": "Purple circle, white crown",
+      "name_es": "Liderazgo"
+    },
+    "fist": {
+      "description": "Blue circle, white raised fist",
+      "name_es": "Fuerza"
+    },
+    "heart": {
+      "description": "Red circle, white heart with flame",
+      "name_es": "Valor"
+    },
+    "book": {
+      "description": "Green circle, white book",
+      "name_es": "Sabiduría"
+    }
+  },
+  "race_symbols": {
+    "horn": {
+      "race": "men"
+    },
+    "hammer": {
+      "race": "dwarves"
+    },
+    "phial": {
+      "race": "elves"
+    },
+    "pipe": {
+      "race": "hobbits"
+    },
+    "maple_leaf": {
+      "race": "ents"
+    },
+    "orb": {
+      "race": "wizards"
+    },
+    "eagle": {
+      "race": "eagle",
+      "note": "Only on one Hobbit alliance token; counts for the 6-races victory"
+    }
+  },
+  "region_banners": {
+    "teal_ship": {
+      "description": "Teal banner, white ship",
+      "region": "lindon"
+    },
+    "black_winged_helm": {
+      "description": "Black banner, golden winged helm",
+      "region": "arnor"
+    },
+    "green_leaf": {
+      "description": "Light-green banner, yellow leaf",
+      "region": "rhovanion"
+    },
+    "purple_swirl": {
+      "description": "Purple banner, white/blue swirl",
+      "region": "enedwaith"
+    },
+    "blue_white_tree": {
+      "description": "Dark-blue banner, white tree",
+      "region": "gondor"
+    },
+    "red_gold_sun": {
+      "description": "Dark-red banner, golden spiked sun",
+      "region": "mordor"
+    },
+    "green_white_horse": {
+      "description": "Green banner, white horse",
+      "region": "rohan"
+    }
+  },
+  "chain_symbols": {
+    "fish": "Fish",
+    "teapot": "Teapot",
+    "horse_head": "Horse head",
+    "horseshoe": "Horseshoe",
+    "anvil": "Anvil",
+    "harp": "Harp",
+    "cooking_pot": "Steaming cooking pot",
+    "sword": "Sword",
+    "helmet": "Helmet",
+    "bow_and_arrow": "Bow with arrow",
+    "rolled_scroll": "Rolled-up scroll",
+    "open_scroll": "Open scroll",
+    "campfire": "Campfire",
+    "acorn": "Acorn",
+    "treasure_chest": "Treasure chest",
+    "armour": "Breastplate/armour",
+    "axe": "Axe"
+  },
+  "card_layout": {
+    "effect": "Top coloured band",
+    "cost": "Circles just below the band, centred (yellow circle = coins)",
+    "chain_symbol_required": "Banner on the left, just below the band: card is free if you own that symbol",
+    "chain_symbol_granted": "Banner in the top-right corner of the band",
+    "skill_choice": "Skill icons separated by '/' = choose one each turn",
+    "special_icons": "Purple cards only: icons in the band, read left to right ('order' keeps the printed sequence)"
+  },
+  "special_icons": {
+    "arrow": {
+      "description": "Silver arrowhead",
+      "meaning": "Move 1 of your units to an adjacent region"
+    },
+    "coin_cross": {
+      "description": "Gold coin crossed out",
+      "meaning": "Opponent loses 1 coin"
+    },
+    "unit_cross": {
+      "description": "Unit crossed out",
+      "meaning": "Remove 1 enemy unit from any region"
+    }
+  }
+}

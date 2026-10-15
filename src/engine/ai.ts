@@ -1,0 +1,273 @@
+import { RACES, RING_LENGTH, otherSide } from './data.js';
+import { chainSymbols, skillPool } from './costs.js';
+import { applyAction, legalActions, presence, raceSymbols } from './engine.js';
+import type { Action, GameState, Side, Skill } from './types.js';
+
+export type AiLevel = 'easy' | 'normal' | 'hard' | 'impossible';
+
+type Rand = () => number;
+
+export interface LevelConfig {
+  /** Chance of ignoring the search and playing any legal move. */
+  blunder: number;
+  /** Random noise added to each candidate's score. */
+  noise: number;
+  /** Independent guesses of the hidden cards to average over. */
+  samples: number;
+  /** Options kept at each decision inside a simulated turn. */
+  beam: number;
+  /** Positions examined per candidate move. */
+  nodes: number;
+  /** Turns looked ahead: 1 plans only its own turn, 2 also expects the rival's best answer. */
+  depth: number;
+  /** Most promising ways to finish a turn that are followed into the next one. */
+  replies: number;
+  /** Candidate moves given the deep search, picked by a quick first pass. */
+  shortlist: number;
+  weights: Weights;
+}
+
+
+const WIN = 100_000;
+const SKILLS: Skill[] = ['mask', 'fist', 'heart', 'book', 'crown'];
+const RACE_VALUE = [0, 4, 9, 16, 26, 44, 0];
+
+/** What the AI values in a position. */
+export interface Weights {
+  ring: number;
+  ringLate: number;
+  races: number;
+  presence: number;
+  presence6: number;
+  unit: number;
+  unitCap: number;
+  fortress: number;
+  /** How much more the map counts in each later chapter. */
+  mapSlope: number;
+  coin: number;
+  skill: number;
+  flexSkill: number;
+  chain: number;
+  token: number;
+  /** How much less the economy counts in each later chapter. */
+  economySlope: number;
+  threat: number;
+  extraTurn: number;
+}
+
+export const BASE_WEIGHTS: Weights = {
+  ring: 6, ringLate: 9, races: 1, presence: 7, presence6: 30, unit: 1.2, unitCap: 3, fortress: 4, mapSlope: 0.35,
+  coin: 2, skill: 3, flexSkill: 3, chain: 2.5, token: 4, economySlope: 0.3, threat: 1, extraTurn: 6,
+};
+
+/** Hard plays with weights tuned by self-play; it wins about 70% of its games against Normal. */
+export const TUNED_WEIGHTS: Weights = {
+  ...BASE_WEIGHTS, races: 2.5, ring: 3, ringLate: 4, presence: 10, presence6: 40, token: 6,
+};
+
+/** Retuned by self-play against Hard: skills matter more and early ring steps less (wins about 67% with Hard's search). */
+export const IMPOSSIBLE_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill: 4.8 };
+
+const SHALLOW = { depth: 1, replies: 1, shortlist: Infinity };
+
+// Impossible also expects the rival's best answer; it wins about 75% of its games against Hard and 80% against Normal.
+
+export const LEVELS: Record<AiLevel, LevelConfig> = {
+  easy: { blunder: 0.4, noise: 20, samples: 1, beam: 2, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },
+  normal: { blunder: 0, noise: 2, samples: 1, beam: 3, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },
+  hard: { blunder: 0, noise: 0, samples: 2, beam: 3, nodes: 400, ...SHALLOW, weights: TUNED_WEIGHTS },
+  impossible: { blunder: 0, noise: 0, samples: 6, beam: 3, nodes: 3000, depth: 2, replies: 4, shortlist: 6, weights: IMPOSSIBLE_WEIGHTS },
+};
+
+// ---------- evaluation ----------
+
+/** How good the position is for `side`, ignoring the rival. */
+function score(state: GameState, side: Side, w: Weights): number {
+  const p = state.players[side];
+  let v = 0;
+
+  // Ring quest: every step counts, the last ones much more.
+  v += w.ring * p.ring + Math.max(0, p.ring - 9) * w.ringLate;
+
+  // Races: each new symbol brings the 6-race victory closer.
+  v += RACE_VALUE[Math.min(5, raceSymbols(state, side).size)] * w.races;
+
+  // Map: presence wins the game outright (7 regions) and decides the end of chapter 3.
+  const pres = presence(state, side);
+  const mapWeight = 1 + w.mapSlope * (state.chapter - 1);
+  let board = pres * w.presence + (pres >= 6 ? w.presence6 : 0);
+  for (const r of Object.values(state.regions)) {
+    board += Math.min(r.units[side], w.unitCap) * w.unit;
+    if (r.fortress === side) board += w.fortress;
+  }
+  v += board * mapWeight;
+
+  // Economy: coins, skills and chain symbols make future cards cheaper. Worth less as the game ends.
+  const economy = 1.4 - w.economySlope * (state.chapter - 1);
+  let eco = w.coin * Math.min(p.coins, 8) + 0.25 * w.coin * Math.max(0, p.coins - 8);
+  const pool = skillPool(state, side);
+  for (const s of SKILLS) eco += w.skill * Math.min(pool.fixed[s], 2) + (w.skill / 3) * Math.max(0, pool.fixed[s] - 2);
+  eco += pool.flexible.length * w.flexSkill;
+  eco += chainSymbols(state, side).size * w.chain;
+  v += eco * economy;
+
+  v += p.tokens.length * w.token;
+  return v;
+}
+
+/** Score from `side`'s point of view: positive is good for it. */
+export function evaluate(state: GameState, side: Side, w: Weights = BASE_WEIGHTS): number {
+  if (state.winner) {
+    if (state.winner.sides.length === 2) return 0;
+    return state.winner.sides[0] === side ? WIN : -WIN;
+  }
+  const opp = otherSide(side);
+  let v = score(state, side, w) - score(state, opp, w);
+  // Racing threats: a rival one or two steps from any victory must be stopped now.
+  v -= (threat(state, opp) - threat(state, side) * 0.5) * w.threat;
+  if (state.current === side && !state.prompt) v += w.extraTurn;
+  return v;
+}
+
+function threat(state: GameState, side: Side): number {
+  const p = state.players[side];
+  let t = 0;
+  const ringLeft = RING_LENGTH - p.ring;
+  if (ringLeft <= 2) t += ringLeft === 1 ? 60 : 30;
+  if (raceSymbols(state, side).size >= 5) t += 45;
+  if (presence(state, side) >= 6) t += 40;
+  return t;
+}
+
+// ---------- hidden information ----------
+
+function shuffleInPlace<T>(items: T[], rand: Rand): void {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+}
+
+/**
+ * A copy of the state where everything the AI cannot see is reshuffled: face-down cards, the discard pile,
+ * the location deck, the alliance piles and the seed for future chapters. Searching on it keeps the AI honest.
+ */
+export function determinize(state: GameState, rand: Rand): GameState {
+  const s = structuredClone(state);
+  s.log = [];
+  s.seed = Math.floor(rand() * 2 ** 31);
+  const hidden = s.slots.filter((slot) => !slot.faceUp && !slot.taken);
+  // The discard pile is visible while choosing from it (Barad-dûr), so leave it alone then.
+  const discardKnown = s.prompt?.step.k === 'playFromDiscard';
+  const pool = [...hidden.map((slot) => slot.cardId), ...(discardKnown ? [] : s.discard)];
+  shuffleInPlace(pool, rand);
+  hidden.forEach((slot, i) => { slot.cardId = pool[i]; });
+  if (!discardKnown) s.discard = pool.slice(hidden.length);
+  shuffleInPlace(s.locationDeck, rand);
+  for (const race of RACES) shuffleInPlace(s.alliancePiles[race], rand);
+  return s;
+}
+
+// ---------- search ----------
+
+interface Budget { nodes: number }
+
+/** Best score `side` can reach by the end of its current turn (it makes every choice along the way). */
+function bestTurnValue(state: GameState, side: Side, beam: number, budget: Budget, startTurn: number, w: Weights): number {
+  if (state.winner || state.turn !== startTurn || budget.nodes <= 0) return evaluate(state, side, w);
+  let children = legalActions(state).map((a) => applyAction(state, a));
+  budget.nodes -= children.length;
+  if (children.length > beam) {
+    children = children
+      .map((c) => ({ c, v: evaluate(c, side, w) }))
+      .sort((a, b) => b.v - a.v)
+      .slice(0, beam)
+      .map((x) => x.c);
+  }
+  let best = -Infinity;
+  for (const child of children) {
+    best = Math.max(best, bestTurnValue(child, side, beam, budget, startTurn, w));
+    if (best >= WIN) break;
+  }
+  return best;
+}
+
+/** Positions where the current turn can end, each scored for the player making it, best first. */
+function turnEnds(state: GameState, beam: number, budget: Budget, w: Weights): { s: GameState; v: number }[] {
+  const mover = state.current;
+  const ends: { s: GameState; v: number }[] = [];
+  const walk = (s: GameState) => {
+    if (s.winner || s.turn !== state.turn || budget.nodes <= 0) {
+      ends.push({ s, v: evaluate(s, mover, w) });
+      return;
+    }
+    let children = legalActions(s).map((a) => applyAction(s, a));
+    budget.nodes -= children.length;
+    if (children.length > beam) {
+      children = children
+        .map((c) => ({ c, v: evaluate(c, mover, w) }))
+        .sort((a, b) => b.v - a.v)
+        .slice(0, beam)
+        .map((x) => x.c);
+    }
+    for (const child of children) walk(child);
+  };
+  walk(state);
+  return ends.sort((a, b) => b.v - a.v);
+}
+
+/** Value for `side` after `turns` more turns, each player finishing its turn in its own best way. */
+function lookahead(state: GameState, side: Side, turns: number, cfg: LevelConfig, budget: Budget): number {
+  if (state.winner || turns === 0 || budget.nodes <= 0) return evaluate(state, side, cfg.weights);
+  const ends = turnEnds(state, cfg.beam, budget, cfg.weights).slice(0, cfg.replies);
+  const values = ends.map((e) => lookahead(e.s, side, turns - 1, cfg, budget));
+  return state.current === side ? Math.max(...values) : Math.min(...values);
+}
+
+/** Value of each listed action in one guess of the hidden cards. */
+function scoreActions(state: GameState, actions: Action[], cfg: LevelConfig): number[] {
+  return actions.map((a) => {
+    const next = applyAction(state, a);
+    const budget = { nodes: cfg.nodes };
+    return cfg.depth > 1
+      ? lookahead(next, state.current, cfg.depth, cfg, budget)
+      : bestTurnValue(next, state.current, cfg.beam, budget, state.turn, cfg.weights);
+  });
+}
+
+/** Average value of each action over several guesses of the hidden cards. */
+function averageScores(worlds: GameState[], actions: Action[], cfg: LevelConfig): number[] {
+  const totals = new Array(actions.length).fill(0);
+  for (const world of worlds) {
+    scoreActions(world, actions, cfg).forEach((v, j) => { totals[j] += v; });
+  }
+  return totals.map((t) => t / worlds.length);
+}
+
+/** Picks the AI's next action: a card, a key location, or an answer to the pending decision. */
+export function chooseAction(state: GameState, level: AiLevel | LevelConfig, rand: Rand = Math.random): Action {
+  let actions = legalActions(state);
+  if (actions.length === 0) throw new Error('No legal actions');
+  if (actions.length === 1) return actions[0];
+  const cfg = typeof level === 'string' ? LEVELS[level] : level;
+  if (rand() < cfg.blunder) return actions[Math.floor(rand() * actions.length)];
+
+  const worlds = Array.from({ length: cfg.samples }, () => determinize(state, rand));
+  // The deep search is costly, so only the moves that look best on a quick pass get it.
+  if (cfg.depth > 1 && actions.length > cfg.shortlist) {
+    const quick = averageScores(worlds, actions, { ...cfg, depth: 1, nodes: LEVELS.hard.nodes });
+    actions = actions
+      .map((a, i) => ({ a, v: quick[i] }))
+      .sort((x, y) => y.v - x.v)
+      .slice(0, cfg.shortlist)
+      .map((x) => x.a);
+  }
+  const values = averageScores(worlds, actions, cfg);
+  let best = 0;
+  let bestValue = -Infinity;
+  values.forEach((value, i) => {
+    const v = value + (rand() - 0.5) * 2 * cfg.noise;
+    if (v > bestValue) { bestValue = v; best = i; }
+  });
+  return actions[best];
+}

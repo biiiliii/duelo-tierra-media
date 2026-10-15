@@ -1,0 +1,730 @@
+{
+  "chapter": 2,
+  "source_images": [
+    "fotos/capitol 2/blaves.jpeg",
+    "fotos/capitol 2/verdes.jpeg",
+    "fotos/capitol 2/grises.jpeg",
+    "fotos/capitol 2/grogues.jpeg",
+    "fotos/capitol 2/vermelles.jpeg"
+  ],
+  "card_count": 23,
+  "symbols_file": "symbols.json",
+  "orientation_note": "Photos taken upright, one per colour. 'position.index' counts left-to-right, top row first.",
+  "cards": [
+    {
+      "id": "cap2_01",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum crouching by a stream holding the Ring",
+      "position": {
+        "photo": "blaves.jpeg",
+        "index": 1
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "fist",
+          "fist",
+          "book"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 2,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "rolled_scroll"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_02",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum crouching by a stream holding the Ring",
+      "position": {
+        "photo": "blaves.jpeg",
+        "index": 2
+      },
+      "cost": {
+        "coins": 1,
+        "skills": [],
+        "chain_symbol_required": "teapot"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 1,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_03",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum crouching by a stream holding the Ring",
+      "position": {
+        "photo": "blaves.jpeg",
+        "index": 3
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "fist",
+          "heart",
+          "heart"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 2,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "campfire"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_04",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum crouching by a stream holding the Ring",
+      "position": {
+        "photo": "blaves.jpeg",
+        "index": 4
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "fist"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 1,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_05",
+      "color": "blue",
+      "name_or_category": "Ring card",
+      "artwork": "Gollum crouching by a stream holding the Ring",
+      "position": {
+        "photo": "blaves.jpeg",
+        "index": 5
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "heart",
+          "fist"
+        ],
+        "chain_symbol_required": "horse_head"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 1,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_06",
+      "color": "green",
+      "name_or_category": "Race card",
+      "artwork": "Elf lady in white holding a flower",
+      "position": {
+        "photo": "verdes.jpeg",
+        "index": 1
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "heart",
+          "crown",
+          "book"
+        ],
+        "chain_symbol_required": "harp"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": {
+          "icon": "phial",
+          "race": "elves"
+        },
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_07",
+      "color": "green",
+      "name_or_category": "Race card",
+      "artwork": "Shieldmaiden in white beside a white horse",
+      "position": {
+        "photo": "verdes.jpeg",
+        "index": 2
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "heart",
+          "heart",
+          "book"
+        ],
+        "chain_symbol_required": "horseshoe"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": {
+          "icon": "horn",
+          "race": "men"
+        },
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "open_scroll"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_08",
+      "color": "green",
+      "name_or_category": "Race card",
+      "artwork": "Two helmeted dwarves with shields and spears",
+      "position": {
+        "photo": "verdes.jpeg",
+        "index": 3
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "fist",
+          "fist",
+          "crown"
+        ],
+        "chain_symbol_required": "anvil"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": {
+          "icon": "hammer",
+          "race": "dwarves"
+        },
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_09",
+      "color": "green",
+      "name_or_category": "Race card",
+      "artwork": "Two hobbits in a doorway of a lit house",
+      "position": {
+        "photo": "verdes.jpeg",
+        "index": 4
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "mask",
+          "crown"
+        ],
+        "chain_symbol_required": "cooking_pot"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": {
+          "icon": "pipe",
+          "race": "hobbits"
+        },
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "acorn"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_10",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Trolls on a ridge, two hobbits hiding below",
+      "position": {
+        "photo": "grises.jpeg",
+        "index": 1
+      },
+      "cost": {
+        "coins": 1,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "mask",
+          "mask"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_11",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Cloaked figure with a torch facing a giant spider",
+      "position": {
+        "photo": "grises.jpeg",
+        "index": 2
+      },
+      "cost": {
+        "coins": 1,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "heart",
+          "heart"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_12",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "War oliphaunt with a howdah",
+      "position": {
+        "photo": "grises.jpeg",
+        "index": 3
+      },
+      "cost": {
+        "coins": 1,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "fist",
+          "fist"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_13",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Armoured knight with banner and spears",
+      "position": {
+        "photo": "grises.jpeg",
+        "index": 4
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "crown"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_14",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Orcs ambushing a wagon on a mountain road",
+      "position": {
+        "photo": "grises.jpeg",
+        "index": 5
+      },
+      "cost": {
+        "coins": 1,
+        "skills": [
+          "crown",
+          "book"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": [
+          "mask",
+          "fist",
+          "heart"
+        ],
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_15",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Hands pointing at a map on a table",
+      "position": {
+        "photo": "grises.jpeg",
+        "index": 6
+      },
+      "cost": {
+        "coins": 1,
+        "skills": [
+          "mask"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": [
+          "crown",
+          "book"
+        ],
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_16",
+      "color": "grey",
+      "name_or_category": "Skill card",
+      "artwork": "Hooded woman reading in a library",
+      "position": {
+        "photo": "grises.jpeg",
+        "index": 7
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [
+          "book"
+        ],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_17",
+      "color": "yellow",
+      "name_or_category": "Coins card",
+      "artwork": "Coin sacks and stacks of gold",
+      "position": {
+        "photo": "grogues.jpeg",
+        "index": 1
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 3,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": "treasure_chest"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_18",
+      "color": "yellow",
+      "name_or_category": "Coins card",
+      "artwork": "Treasure chest overflowing with coins and gems",
+      "position": {
+        "photo": "grogues.jpeg",
+        "index": 2
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 4,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": null,
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_19",
+      "color": "red",
+      "name_or_category": "Military card",
+      "artwork": "Orc chieftain leaping over a war machine",
+      "position": {
+        "photo": "vermelles.jpeg",
+        "index": 1
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "fist",
+          "heart"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": {
+          "units": 2,
+          "region_choice": [
+            "lindon",
+            "rohan"
+          ]
+        },
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_20",
+      "color": "red",
+      "name_or_category": "Military card",
+      "artwork": "Fiery sunset over a burning valley",
+      "position": {
+        "photo": "vermelles.jpeg",
+        "index": 2
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "heart",
+          "heart",
+          "crown"
+        ],
+        "chain_symbol_required": null
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": {
+          "units": 2,
+          "region_choice": [
+            "arnor",
+            "rhovanion"
+          ]
+        },
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_21",
+      "color": "red",
+      "name_or_category": "Military card",
+      "artwork": "Soldier on a rain-swept battlement",
+      "position": {
+        "photo": "vermelles.jpeg",
+        "index": 3
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "fist",
+          "fist",
+          "heart"
+        ],
+        "chain_symbol_required": "helmet"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": {
+          "units": 2,
+          "region_choice": [
+            "lindon",
+            "enedwaith"
+          ]
+        },
+        "special_icons": null,
+        "chain_symbol_granted": "armour"
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_22",
+      "color": "red",
+      "name_or_category": "Military card",
+      "artwork": "Elves fighting an orc horde before a fire",
+      "position": {
+        "photo": "vermelles.jpeg",
+        "index": 4
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "mask",
+          "mask"
+        ],
+        "chain_symbol_required": "bow_and_arrow"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": {
+          "units": 2,
+          "region_choice": [
+            "gondor",
+            "mordor"
+          ]
+        },
+        "special_icons": null,
+        "chain_symbol_granted": null
+      },
+      "uncertain": []
+    },
+    {
+      "id": "cap2_23",
+      "color": "red",
+      "name_or_category": "Military card",
+      "artwork": "Army marching under lightning",
+      "position": {
+        "photo": "vermelles.jpeg",
+        "index": 5
+      },
+      "cost": {
+        "coins": 0,
+        "skills": [
+          "mask",
+          "mask",
+          "book"
+        ],
+        "chain_symbol_required": "sword"
+      },
+      "effect": {
+        "coins": 0,
+        "ring_advance": 0,
+        "race_symbol": null,
+        "skill_symbols": [],
+        "skill_choice": null,
+        "military": {
+          "units": 2,
+          "region_choice": [
+            "mordor",
+            "rohan"
+          ]
+        },
+        "special_icons": null,
+        "chain_symbol_granted": "axe"
+      },
+      "uncertain": []
+    }
+  ]
+}

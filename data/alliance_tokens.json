@@ -1,0 +1,114 @@
+{
+  "source": "playeraid.pdf (Efectos de las Razas). 3 tokens per race; each pile is shuffled at setup.",
+  "note": "Elves/Dwarves/Hobbits/Men tokens are persistent abilities; Ents/Wizards tokens are one-shot, resolved when taken.",
+  "tokens": [
+    {
+      "id": "elves_yellow_turn",
+      "race": "elves",
+      "kind": "passive",
+      "text": "Cuando juegues una carta Amarilla, juega otro turno."
+    },
+    {
+      "id": "elves_red_any",
+      "race": "elves",
+      "kind": "passive",
+      "text": "Cuando juegues una carta Roja, puedes colocar todas las Unidades en la región que elijas."
+    },
+    {
+      "id": "elves_wild_skill",
+      "race": "elves",
+      "kind": "passive",
+      "text": "Una vez por turno, benefíciate de cualquier Habilidad."
+    },
+    {
+      "id": "dwarves_loc_discount",
+      "race": "dwarves",
+      "kind": "passive",
+      "text": "Cuando juegues un Lugar clave, ignora el coste de Monedas adicional."
+    },
+    {
+      "id": "dwarves_loc_turn",
+      "race": "dwarves",
+      "kind": "passive",
+      "text": "Cuando juegues un Lugar clave, juega otro turno."
+    },
+    {
+      "id": "dwarves_green_move",
+      "race": "dwarves",
+      "kind": "passive",
+      "text": "Cuando juegues una carta Verde, completa también 2 movimientos."
+    },
+    {
+      "id": "hobbits_eagle",
+      "race": "hobbits",
+      "kind": "passive",
+      "text": "Símbolo del Águila: símbolo de Raza adicional para la victoria por Razas."
+    },
+    {
+      "id": "hobbits_blue_unit",
+      "race": "hobbits",
+      "kind": "passive",
+      "text": "Cuando juegues una carta Azul, coloca también 1 Unidad en cualquier región."
+    },
+    {
+      "id": "hobbits_chain_coins",
+      "race": "hobbits",
+      "kind": "passive",
+      "text": "Cuando juegues una carta mediante un símbolo de cadena, toma 3 Monedas."
+    },
+    {
+      "id": "men_yellow_ring",
+      "race": "men",
+      "kind": "passive",
+      "text": "Cuando juegues una carta Amarilla, mueve también 1 casilla en la Misión del Anillo."
+    },
+    {
+      "id": "men_red_extra",
+      "race": "men",
+      "kind": "passive",
+      "text": "Cuando juegues una carta Roja, coloca 1 Unidad adicional en la región elegida."
+    },
+    {
+      "id": "men_discard_double",
+      "race": "men",
+      "kind": "passive",
+      "text": "Cuando descartes una carta, toma el doble de Monedas (2, 4 o 6)."
+    },
+    {
+      "id": "ents_turn",
+      "race": "ents",
+      "kind": "instant",
+      "text": "Juega otro turno cuando termines el actual."
+    },
+    {
+      "id": "ents_remove_fortress",
+      "race": "ents",
+      "kind": "instant",
+      "text": "Retira 1 Fortaleza enemiga de cualquier región y devuélvesela a tu oponente."
+    },
+    {
+      "id": "ents_triple",
+      "race": "ents",
+      "kind": "instant",
+      "text": "Elige 3 veces: retirar 1 Unidad enemiga, que tu oponente pierda 1 Moneda o completar 1 movimiento."
+    },
+    {
+      "id": "wizards_ring",
+      "race": "wizards",
+      "kind": "instant",
+      "text": "Mueve a tu personaje 2 casillas en la Misión del Anillo."
+    },
+    {
+      "id": "wizards_units",
+      "race": "wizards",
+      "kind": "instant",
+      "text": "Coloca 2 Unidades en 1 región o 1 Unidad en 2 regiones diferentes."
+    },
+    {
+      "id": "wizards_discard_play",
+      "race": "wizards",
+      "kind": "instant",
+      "text": "Toma todas las cartas de la pila de descartes, elige 1 y juégala gratis."
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+name: AI self-play
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: Self-play spec (JSON, see scripts/selfplay.ts)
+        required: true
+
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      matrix:
+        job: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Play (one process per core)
+        env:
+          SPEC_JSON: ${{ inputs.spec }}
+        run: |
+          echo "$SPEC_JSON" > spec.json
+          cores=$(nproc)
+          shards=$((20 * cores))
+          for c in $(seq 0 $((cores - 1))); do
+            SPEC=spec.json SHARD=$((${{ matrix.job }} * cores + c)) SHARDS=$shards \
+              npx vite-node scripts/selfplay.ts > part-$c.json &
+          done
+          wait
+          node scripts/merge-results.mjs part-*.json > result-${{ matrix.job }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ matrix.job }}
+          path: result-${{ matrix.job }}.json
+
+  merge:
+    needs: play
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          merge-multiple: true
+      - run: |
+          node scripts/merge-results.mjs result-*.json > summary.json
+          { echo '```json'; cat summary.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: summary
+          path: summary.json

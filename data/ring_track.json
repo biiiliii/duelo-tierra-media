@@ -1,0 +1,15 @@
+{
+  "source": "rules.pdf p.6 + playeraid.pdf",
+  "note": "Progress is relative: each side advances 0..14 on its own half. Nazgûl sits on Frodo's slider, so Fellowship moves never change the gap.",
+  "length": 14,
+  "bonuses": {
+    "3": "coin",
+    "6": "unit",
+    "9": "extra_turn",
+    "12": "remove_fortress"
+  },
+  "finish": {
+    "fellowship": "Frodo y Sam llegan al volcán",
+    "sauron": "El Nazgûl atrapa a Frodo y Sam"
+  }
+}
