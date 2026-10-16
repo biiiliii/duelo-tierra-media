@@ -25,6 +25,52 @@
 .vfx-by-sauron .vfx-face .card { box-shadow: 0 0 0 2px var(--gold), 0 0 28px 6px rgba(226, 89, 47, 0.75), 0 22px 40px rgba(0, 0, 0, 0.6); }
 .vfx-by-fellowship .vfx-face .card { box-shadow: 0 0 0 2px var(--gold), 0 0 28px 6px rgba(141, 184, 216, 0.8), 0 22px 40px rgba(0, 0, 0, 0.6); }
 
+/* A discarded card tears in two along a jagged line and the halves fall apart. */
+.vfx-by-sauron { --glow: rgba(226, 89, 47, 0.8); }
+.vfx-by-fellowship { --glow: rgba(141, 184, 216, 0.85); }
+.vfx-show-discard .vfx-half .card { box-shadow: none; }
+/* The card stays whole (no seam) until the moment it tears. */
+.vfx-whole { animation: vfx-whole var(--life) step-end both; }
+@keyframes vfx-whole { 0% { opacity: 1; } 58%, 100% { opacity: 0; } }
+.vfx-half {
+  --torn: drop-shadow(0 0 2px var(--gold)) drop-shadow(0 0 12px var(--glow));
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 100%;
+  animation: var(--life) cubic-bezier(0.5, 0, 0.75, 0.4) both;
+}
+.vfx-half-l { animation-name: vfx-tear-l; }
+.vfx-half-r { animation-name: vfx-tear-r; }
+.vfx-tear-l { clip-path: polygon(0 0, 53% 0, 47% 11%, 55% 23%, 46% 35%, 54% 48%, 45% 61%, 53% 74%, 46% 87%, 51% 100%, 0 100%); }
+.vfx-tear-r { clip-path: polygon(53% 0, 100% 0, 100% 100%, 51% 100%, 46% 87%, 53% 74%, 45% 61%, 54% 48%, 46% 35%, 55% 23%, 47% 11%); }
+@keyframes vfx-tear-l {
+  0%, 57.9% { opacity: 0; transform: none; filter: var(--torn); }
+  58% { opacity: 1; transform: none; filter: var(--torn); }
+  66% { transform: translateX(-5px) rotate(-9deg); filter: var(--torn); }
+  100% { opacity: 1; transform: translate(-48%, 60%) rotate(-38deg); filter: var(--torn) grayscale(0.8) brightness(0.6); }
+}
+@keyframes vfx-tear-r {
+  0%, 57.9% { opacity: 0; transform: none; filter: var(--torn); }
+  58% { opacity: 1; transform: none; filter: var(--torn); }
+  66% { transform: translateX(5px) rotate(9deg); filter: var(--torn); }
+  100% { opacity: 1; transform: translate(44%, 72%) rotate(32deg); filter: var(--torn) grayscale(0.8) brightness(0.6); }
+}
+.vfx-scrap {
+  position: absolute;
+  left: 48%;
+  width: 7px;
+  height: 5px;
+  background: #f1e3bd;
+  box-shadow: 0 0 4px var(--glow);
+  opacity: 0;
+  animation: vfx-scrap var(--life) ease-out both;
+}
+@keyframes vfx-scrap {
+  0%, 58% { opacity: 0; transform: none; }
+  61% { opacity: 1; }
+  92%, 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)); }
+}
+
 .vfx-place, .vfx-token {
   width: 190px;
   display: flex;

@@ -64,6 +64,11 @@ export function FxLayer({ fx, nameOf }: Props) {
 
 type Point = [number, number];
 
+const EASE = 'cubic-bezier(0.33, 0.7, 0.25, 1)';
+
+/** Bits of paper that fly off the tear of a discarded card: [x, y, spin]. */
+const SCRAPS: [number, number, number][] = [[-34, -26, -200], [30, -14, 160], [-22, 22, 240], [38, 30, -150], [-8, 44, 120]];
+
 /** A card (or place, or alliance token) that lifts off, spins in 3D to the middle of the screen and flies away. */
 function Showcase({ effect, chapter, style }: { effect: Effect; chapter: number; style: CSSProperties }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -91,14 +96,28 @@ function Showcase({ effect, chapter, style }: { effect: Effect; chapter: number;
       `translate(-50%, -50%) perspective(1100px) translate3d(${x}px, ${y}px, 0) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${s})`;
     const lift: Point = [from[0], from[1] - 26];
     let frames: Keyframe[];
-    if (kind === 'discard' || kind === 'burn') {
+    if (kind === 'discard') {
+      // Shown face up, it strains for a moment and tears in two (the halves fall by themselves, see .vfx-half).
+      const shake = (rz: number) => ({ transform: tf([0, 0], big * 0.9, 0, 0, rz) });
+      frames = [
+        { offset: 0, transform: tf(from, s0), opacity: 1, easing: EASE },
+        { offset: 0.12, transform: tf(lift, s0 * 1.12, -18), opacity: 1, easing: EASE },
+        { offset: 0.34, transform: tf([0, 0], big * 0.9), opacity: 1 },
+        { offset: 0.46, ...shake(0) },
+        { offset: 0.49, ...shake(2.5) },
+        { offset: 0.52, ...shake(-2.5) },
+        { offset: 0.55, ...shake(2) },
+        { offset: 0.58, ...shake(0), opacity: 1, easing: 'ease-in' },
+        { offset: 1, transform: tf([0, 40], big * 0.9), opacity: 0 },
+      ];
+    } else if (kind === 'burn') {
       // Shown, then it burns away.
       frames = [
         { offset: 0, transform: tf(from, s0), opacity: 1, filter: 'none' },
         { offset: 0.12, transform: tf(lift, s0 * 1.12, -18), opacity: 1 },
         { offset: 0.38, transform: tf([0, 0], big * 0.9, 0, 360), opacity: 1, filter: 'none' },
-        { offset: 0.6, transform: tf([0, 0], big * 0.9, 0, 360, kind === 'burn' ? 3 : 0), filter: 'none' },
-        { offset: 0.66, transform: tf([0, 0], big * 0.92, 0, 360, kind === 'burn' ? -3 : 0), filter: 'brightness(1.4) sepia(0.6)' },
+        { offset: 0.6, transform: tf([0, 0], big * 0.9, 0, 360, 3), filter: 'none' },
+        { offset: 0.66, transform: tf([0, 0], big * 0.92, 0, 360, -3), filter: 'brightness(1.4) sepia(0.6)' },
         { offset: 1, transform: tf([0, -30], big * 1.2, 0, 360), opacity: 0, filter: 'brightness(2.6) sepia(1) blur(6px)' },
       ];
     } else if (kind === 'token') {
@@ -119,7 +138,9 @@ function Showcase({ effect, chapter, style }: { effect: Effect; chapter: number;
         { offset: 1, transform: tf(to, 0.22, spin[0], spin[1], -10), opacity: 0.25 },
       ];
     }
-    const anim = el.animate(frames, { duration: effect.life, easing: 'cubic-bezier(0.33, 0.7, 0.25, 1)', fill: 'forwards' });
+    // The discard runs on linear time so it stays in step with the CSS of its torn halves.
+    const easing = kind === 'discard' ? 'linear' : EASE;
+    const anim = el.animate(frames, { duration: effect.life, easing, fill: 'forwards' });
     return () => anim.cancel();
   }, [effect, kind]);
 
@@ -142,6 +163,19 @@ function Showcase({ effect, chapter, style }: { effect: Effect; chapter: number;
         <span>{TOKEN_TEXT[e.token]}</span>
       </div>
     );
+  } else if (kind === 'discard') {
+    const id = effect.cardId;
+    const card = id && CARDS[id] ? <CardFace cardId={id} size="lg" /> : <CardBack chapter={chapter} />;
+    face = (
+      <div className="vfx-card3d">
+        <div className="vfx-face vfx-whole">{card}</div>
+        <div className="vfx-half vfx-half-l"><div className="vfx-face vfx-tear-l">{card}</div></div>
+        <div className="vfx-half vfx-half-r"><div className="vfx-face vfx-tear-r">{card}</div></div>
+        {SCRAPS.map(([dx, dy, r], i) => (
+          <i key={i} className="vfx-scrap" style={{ ['--dx' as string]: `${dx}px`, ['--dy' as string]: `${dy}px`, ['--r' as string]: `${r}deg`, top: `${18 + i * 16}%` } as CSSProperties} />
+        ))}
+      </div>
+    );
   } else {
     const id = effect.cardId;
     face = (
@@ -155,7 +189,7 @@ function Showcase({ effect, chapter, style }: { effect: Effect; chapter: number;
   return (
     <>
       <div className="vfx-dim" style={style} />
-      <div ref={ref} className={`vfx-show vfx-show-${kind} vfx-by-${e.by}`}>{face}</div>
+      <div ref={ref} className={`vfx-show vfx-show-${kind} vfx-by-${e.by}`} style={style}>{face}</div>
       <p className={`vfx-show-label vfx-label-${e.by}`} style={style}>{effect.text}</p>
     </>
   );
