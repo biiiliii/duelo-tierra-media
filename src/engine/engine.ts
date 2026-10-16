@@ -3,9 +3,9 @@ import {
   RING_BONUSES, RING_LENGTH, TOKENS, otherSide,
 } from './data.js';
 import { cardCost, locationCost } from './costs.js';
-import { RACE_NAMES, REGION_NAMES, SIDE_NAMES, cardLabel, fromRegion, tokenLabel } from './labels.js';
+import { RACE_NAMES, REGION_NAMES, SIDE_NAMES, cardLabel, fromRegion, playedCardLabel, tokenLabel } from './labels.js';
 import type {
-  Action, Chapter, GameState, PlayerState, Prompt, PromptOption, Race, RegionId, RegionState, Side,
+  Action, Chapter, Fx, FxBody, GameState, PlayerState, Prompt, PromptOption, Race, RegionId, RegionState, Side,
   Slot, Step,
 } from './types.js';
 
@@ -63,6 +63,7 @@ export function newGame(seed: number = Date.now()): GameState {
     prompt: null,
     winner: null,
     log: [],
+    fx: [],
     seed: seed | 0,
     turn: 1,
   };
@@ -83,6 +84,7 @@ export function newGame(seed: number = Date.now()): GameState {
   state.locationDeck = locs.slice(3);
   setupChapter(state, 1);
   log(state, 'Comença la partida. Sauron juga primer.');
+  emit(state, { t: 'turn', side: 'sauron', extra: false });
   return state;
 }
 
@@ -102,6 +104,7 @@ function setupChapter(state: GameState, chapter: Chapter): void {
     state.locationsFaceUp.push(state.locationDeck.shift()!);
   }
   log(state, `— Capítol ${chapter} —`);
+  emit(state, { t: 'chapter', chapter });
 }
 
 // ---------- queries ----------
@@ -147,8 +150,27 @@ function coinWord(n: number): string {
   return `${n} ${n === 1 ? 'moneda' : 'monedes'}`;
 }
 
-function log(state: GameState, msg: string): void {
+function log(state: GameState, msg: string, join = false): void {
+  // "Sauron juga carta Groga." + "Sauron guanya 2 monedes." -> "Sauron juga carta Groga i guanya 2 monedes."
+  const actor = `${SIDE_NAMES[state.current]} `;
+  if (join && state.log.length > 0 && msg.startsWith(actor)) {
+    const last = state.log.length - 1;
+    state.log[last] = `${state.log[last].replace(/\.$/, '')} i ${msg.slice(actor.length)}`;
+    return;
+  }
   state.log.push(msg.charAt(0).toUpperCase() + msg.slice(1));
+}
+
+/** Marks the first effect of a card or place so its log line joins the one that played it. */
+function joined(steps: Step[]): Step[] {
+  if (steps.length > 0) steps[0] = { ...steps[0], join: true };
+  return steps;
+}
+
+/** Records an event for the UI, described by the log line just written. */
+function emit(state: GameState, fx: FxBody): void {
+  // Games saved before events existed have no list yet.
+  (state.fx ??= []).push({ ...fx, by: state.current, at: state.log.length } as Fx);
 }
 
 // ---------- victory ----------
@@ -201,18 +223,20 @@ function resolveConflict(state: GameState, region: RegionId): void {
   state.players.fellowship.unitsSupply += m;
   state.players.sauron.unitsSupply += m;
   log(state, `Conflicte a ${REGION_NAMES[region]}: cada bàndol perd ${m} unitat${m > 1 ? 's' : ''}.`);
+  emit(state, { t: 'conflict', region, n: m });
 }
 
-function placeUnits(state: GameState, side: Side, region: RegionId, n: number): void {
+function placeUnits(state: GameState, side: Side, region: RegionId, n: number, join = false): void {
   const p = state.players[side];
   const placed = Math.min(n, p.unitsSupply);
   if (placed === 0) {
-    log(state, `${SIDE_NAMES[side]} no té unitats a la reserva.`);
+    log(state, `${SIDE_NAMES[side]} no té unitats a la reserva.`, join);
     return;
   }
   p.unitsSupply -= placed;
   state.regions[region].units[side] += placed;
-  log(state, `${SIDE_NAMES[side]} col·loca ${placed} unitat${placed > 1 ? 's' : ''} a ${REGION_NAMES[region]}.`);
+  log(state, `${SIDE_NAMES[side]} col·loca ${placed} unitat${placed > 1 ? 's' : ''} a ${REGION_NAMES[region]}.`, join);
+  emit(state, { t: 'units', side, region, n: placed });
   resolveConflict(state, region);
 }
 
@@ -284,15 +308,18 @@ function runStep(state: GameState, step: Step): void {
   switch (step.k) {
     case 'coins':
       me.coins += step.n;
-      log(state, `${SIDE_NAMES[side]} guanya ${coinWord(step.n)}.`);
+      log(state, `${SIDE_NAMES[side]} guanya ${coinWord(step.n)}.`, step.join);
+      emit(state, { t: 'coins', side, n: step.n });
       return;
     case 'oppLoseCoin': {
       const lost = Math.min(step.n, opp.coins);
       opp.coins -= lost;
       log(state, `${SIDE_NAMES[otherSide(side)]} perd ${coinWord(lost)}.`);
+      if (lost > 0) emit(state, { t: 'coins', side: otherSide(side), n: -lost });
       return;
     }
     case 'ring': {
+      const from = me.ring;
       const bonuses: Step[] = [];
       for (let i = 0; i < step.n && me.ring < RING_LENGTH; i++) {
         me.ring++;
@@ -302,28 +329,31 @@ function runStep(state: GameState, step: Step): void {
         else if (bonus === 'extra_turn') bonuses.push({ k: 'extraTurn' });
         else if (bonus === 'remove_fortress') bonuses.push({ k: 'removeEnemyFortress' });
       }
-      log(state, `${SIDE_NAMES[side]} avança a la Missió de l'Anell (${me.ring}/${RING_LENGTH}).`);
+      log(state, `${SIDE_NAMES[side]} avança a la Missió de l'Anell (${me.ring}/${RING_LENGTH}).`, step.join);
+      emit(state, { t: 'ring', side, from, to: me.ring });
       state.queue.unshift(...bonuses);
       return;
     }
     case 'extraTurn':
       state.extraTurns++;
-      log(state, `${SIDE_NAMES[side]} jugarà un altre torn.`);
+      log(state, `${SIDE_NAMES[side]} jugarà un altre torn.`, step.join);
+      emit(state, { t: 'extra', side });
       return;
     case 'placeFortress':
       if (me.fortressSupply > 0) {
         me.fortressSupply--;
         state.regions[step.region].fortress = side;
-        log(state, `${SIDE_NAMES[side]} construeix una fortalesa a ${REGION_NAMES[step.region]}.`);
+        // Only places queue a fortress, and their log line already says where it goes.
+        emit(state, { t: 'fortress', side, region: step.region });
       }
       return;
     case 'placeUnits':
       if (me.unitsSupply === 0) {
-        log(state, `${SIDE_NAMES[side]} no té unitats a la reserva.`);
+        log(state, `${SIDE_NAMES[side]} no té unitats a la reserva.`, step.join);
         return;
       }
       if (step.regions.length === 1) {
-        placeUnits(state, side, step.regions[0], step.n);
+        placeUnits(state, side, step.regions[0], step.n, step.join);
         return;
       }
       ask(state, step, `Tria on col·locar ${step.n} unitat${step.n > 1 ? 's' : ''}.`, 'region', regionOptions(step.regions));
@@ -427,8 +457,9 @@ function runStep(state: GameState, step: Step): void {
 
 function playCardFree(state: GameState, side: Side, cardId: string): void {
   state.players[side].cards.push(cardId);
-  log(state, `${SIDE_NAMES[side]} juga ${cardLabel(cardId)} gratis.`);
-  state.queue.unshift(...cardSteps(state, side, cardId, false));
+  log(state, `${SIDE_NAMES[side]} juga ${playedCardLabel(cardId)} gratis.`);
+  emit(state, { t: 'free', cardId });
+  state.queue.unshift(...joined(cardSteps(state, side, cardId, false)));
 }
 
 function resolveChoice(state: GameState, prompt: Prompt, value: string): void {
@@ -437,20 +468,21 @@ function resolveChoice(state: GameState, prompt: Prompt, value: string): void {
   const opp = otherSide(side);
   switch (step.k) {
     case 'placeUnits':
-      placeUnits(state, side, value as RegionId, step.n);
+      placeUnits(state, side, value as RegionId, step.n, step.join);
       return;
     case 'move':
       if (value === 'skip') {
-        log(state, `${SIDE_NAMES[side]} renuncia als moviments restants.`);
+        log(state, `${SIDE_NAMES[side]} renuncia als moviments restants.`, step.join);
         return;
       }
-      state.queue.unshift({ k: 'moveTo', from: value as RegionId, n: step.n });
+      state.queue.unshift({ k: 'moveTo', from: value as RegionId, n: step.n, join: step.join });
       return;
     case 'moveTo': {
       const to = value as RegionId;
       state.regions[step.from].units[side]--;
       state.regions[to].units[side]++;
-      log(state, `${SIDE_NAMES[side]} mou 1 unitat ${fromRegion(step.from)} a ${REGION_NAMES[to]}.`);
+      log(state, `${SIDE_NAMES[side]} mou 1 unitat ${fromRegion(step.from)} a ${REGION_NAMES[to]}.`, step.join);
+      emit(state, { t: 'move', side, from: step.from, to });
       resolveConflict(state, to);
       if (step.n > 1) state.queue.unshift({ k: 'move', n: step.n - 1 });
       return;
@@ -459,7 +491,8 @@ function resolveChoice(state: GameState, prompt: Prompt, value: string): void {
       const r = value as RegionId;
       state.regions[r].units[opp]--;
       state.players[opp].unitsSupply++;
-      log(state, `${SIDE_NAMES[side]} retira 1 unitat enemiga ${fromRegion(r, 'de')}.`);
+      log(state, `${SIDE_NAMES[side]} retira 1 unitat enemiga ${fromRegion(r, 'de')}.`, step.join);
+      emit(state, { t: 'kill', side: opp, region: r });
       return;
     }
     case 'removeEnemyFortress': {
@@ -467,12 +500,14 @@ function resolveChoice(state: GameState, prompt: Prompt, value: string): void {
       state.regions[r].fortress = null;
       state.players[opp].fortressSupply++;
       log(state, `${SIDE_NAMES[side]} retira la fortalesa enemiga ${fromRegion(r, 'de')}.`);
+      emit(state, { t: 'raze', side: opp, region: r });
       return;
     }
     case 'alliance': {
       const drawn = prompt.drawn ?? [];
       state.players[side].tokens.push(value);
-      log(state, `${SIDE_NAMES[side]} s'alia: ${tokenLabel(value)}`);
+      log(state, `${SIDE_NAMES[side]} s'alia amb els ${RACE_NAMES[TOKENS[value].race]}.`);
+      emit(state, { t: 'token', side, token: value });
       // Put the others back on top of their own piles.
       for (const t of drawn) {
         if (t !== value) state.alliancePiles[TOKENS[t].race].push(t);
@@ -493,6 +528,7 @@ function resolveChoice(state: GameState, prompt: Prompt, value: string): void {
       cards.splice(cards.indexOf(value), 1);
       state.discard.push(value);
       log(state, `${SIDE_NAMES[side]} fa descartar ${cardLabel(value)} al rival.`);
+      emit(state, { t: 'burn', side: opp, cardId: value });
       return;
     }
     case 'wizardUnits':
@@ -533,7 +569,10 @@ function processQueue(state: GameState): void {
 
 function endTurn(state: GameState): void {
   for (const slot of state.slots) {
-    if (!slot.faceUp && isAccessible(state, slot)) slot.faceUp = true;
+    if (!slot.faceUp && isAccessible(state, slot)) {
+      slot.faceUp = true;
+      emit(state, { t: 'reveal', slot: slot.id });
+    }
   }
   if (state.slots.every((s) => s.taken)) {
     if (state.chapter === 3) {
@@ -544,8 +583,9 @@ function endTurn(state: GameState): void {
   }
   if (state.extraTurns > 0) {
     state.extraTurns--;
-    log(state, `${SIDE_NAMES[state.current]} juga un torn extra.`);
+    emit(state, { t: 'turn', side: state.current, extra: true });
   } else {
+    emit(state, { t: 'turn', side: otherSide(state.current), extra: false });
     state.current = otherSide(state.current);
   }
   state.turn++;
@@ -581,14 +621,18 @@ export function applyAction(prev: GameState, action: Action): GameState {
       state.discard.push(slot.cardId);
       me.coins += coins;
       log(state, `${SIDE_NAMES[side]} descarta una carta i guanya ${coinWord(coins)}.`);
+      emit(state, { t: 'card', slot: slot.id, mode: 'discard' });
+      emit(state, { t: 'coins', side, n: coins });
     } else {
       const quote = cardCost(state, side, slot.cardId);
       if (!quote.affordable) throw new IllegalAction('No pots pagar aquesta carta.');
       me.coins -= quote.coins;
       me.cards.push(slot.cardId);
-      log(state, `${SIDE_NAMES[side]} juga ${cardLabel(slot.cardId)}` +
+      log(state, `${SIDE_NAMES[side]} juga ${playedCardLabel(slot.cardId)}` +
         (quote.viaChain ? ' (cadena)' : quote.coins > 0 ? ` pagant ${coinWord(quote.coins)}` : '') + '.');
-      state.queue.push(...cardSteps(state, side, slot.cardId, quote.viaChain));
+      emit(state, { t: 'card', slot: slot.id, mode: 'play', cardId: slot.cardId });
+      if (quote.coins > 0) emit(state, { t: 'coins', side, n: -quote.coins });
+      state.queue.push(...joined(cardSteps(state, side, slot.cardId, quote.viaChain)));
     }
   } else if (action.type === 'takeLocation') {
     if (!state.locationsFaceUp.includes(action.id)) throw new IllegalAction('Aquest lloc no està disponible.');
@@ -598,18 +642,22 @@ export function applyAction(prev: GameState, action: Action): GameState {
     me.coins -= quote.coins;
     me.locations.push(action.id);
     state.locationsFaceUp = state.locationsFaceUp.filter((id) => id !== action.id);
-    log(state, `${SIDE_NAMES[side]} pren el lloc clau ${loc.name}` +
+    log(state, `${SIDE_NAMES[side]} construeix ${loc.name} (${REGION_NAMES[loc.region]})` +
       (quote.coins > 0 ? ` pagant ${coinWord(quote.coins)}` : '') + '.');
+    emit(state, { t: 'location', id: action.id });
+    if (quote.coins > 0) emit(state, { t: 'coins', side, n: -quote.coins });
     state.queue.push({ k: 'placeFortress', region: loc.region });
+    const effects: Step[] = [];
     for (const e of loc.effects) {
-      if (e.type === 'place_units') state.queue.push({ k: 'placeUnits', n: e.n, regions: [e.region] });
-      else if (e.type === 'ring') state.queue.push({ k: 'ring', n: e.n });
-      else if (e.type === 'move') state.queue.push({ k: 'move', n: e.n });
-      else if (e.type === 'coins') state.queue.push({ k: 'coins', n: e.n });
-      else if (e.type === 'play_from_discard') state.queue.push({ k: 'playFromDiscard' });
-      else if (e.type === 'discard_opponent_grey') state.queue.push({ k: 'discardOppGrey' });
-      else if (e.type === 'alliance_any_race') state.queue.push({ k: 'allianceAnyRace' });
+      if (e.type === 'place_units') effects.push({ k: 'placeUnits', n: e.n, regions: [e.region] });
+      else if (e.type === 'ring') effects.push({ k: 'ring', n: e.n });
+      else if (e.type === 'move') effects.push({ k: 'move', n: e.n });
+      else if (e.type === 'coins') effects.push({ k: 'coins', n: e.n });
+      else if (e.type === 'play_from_discard') effects.push({ k: 'playFromDiscard' });
+      else if (e.type === 'discard_opponent_grey') effects.push({ k: 'discardOppGrey' });
+      else if (e.type === 'alliance_any_race') effects.push({ k: 'allianceAnyRace' });
     }
+    state.queue.push(...joined(effects));
     if (hasToken(state, side, 'dwarves_loc_turn')) state.queue.push({ k: 'extraTurn' });
   }
   processQueue(state);

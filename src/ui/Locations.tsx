@@ -41,7 +41,7 @@ export function Locations({ state, disabled, onTake, viewer }: Props) {
           const extra = quote.coins > 0;
           const have = skillCoverage(loc.cost.skills, pool);
           return (
-            <article key={id} className="location" style={{ ['--banner' as string]: REGION_COLOR[loc.region], ['--cost-n' as string]: loc.cost.skills.length }}>
+            <article key={id} className="location" data-fx={`loc-${id}`} style={{ ['--banner' as string]: REGION_COLOR[loc.region], ['--cost-n' as string]: loc.cost.skills.length }}>
               <header className="location-head">
                 <RegionBanner region={loc.region} size={22} />
                 <div>

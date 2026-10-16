@@ -167,6 +167,7 @@ function shuffleInPlace<T>(items: T[], rand: Rand): void {
 export function determinize(state: GameState, rand: Rand): GameState {
   const s = structuredClone(state);
   s.log = [];
+  s.fx = [];
   s.seed = Math.floor(rand() * 2 ** 31);
   const hidden = s.slots.filter((slot) => !slot.faceUp && !slot.taken);
   // The discard pile is visible while choosing from it (Barad-dûr), so leave it alone then.

@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RING_BONUSES, RING_LENGTH } from '../engine/data';
 import type { GameState, Side } from '../engine/types';
 import { Coin, Glyph, Piece } from './Icon';
+import { useEffects } from './FxContext';
 
 const BONUS_TEXT: Record<string, string> = {
   coin: '+1 moneda',
@@ -22,12 +23,23 @@ function BonusIcon({ bonus, side }: { bonus: string; side: Side }) {
   );
 }
 
+function RingGain({ effect }: { effect?: { id: number; life: number; fx: { from: number; to: number } } }) {
+  if (!effect || effect.fx.to <= effect.fx.from) return null;
+  return (
+    <b key={effect.id} className="vfx-float vfx-ring-gain" style={{ ['--life' as string]: `${effect.life}ms` }} aria-hidden="true">
+      +{effect.fx.to - effect.fx.from}
+    </b>
+  );
+}
+
 /**
  * The quest as on the physical board, on a single row: Frodo's path runs to Mount Doom and the Nazgûl's rail
  * (overlaid on it, ending on Frodo's space) slides along with Frodo. When the hobbits move, the
  * whole rail — and the Nazgûl on it — moves too; only Sauron's own advances close the gap.
  */
 export function RingTrack({ state }: { state: GameState }) {
+  const ringFx = useEffects('ring');
+  const glow = (side: Side) => ringFx.find((e) => e.fx.side === side);
   const f = state.players.fellowship.ring;
   const s = state.players.sauron.ring;
   const total = RING_LENGTH * 2 + 1; // absolute spaces 0..28
@@ -48,8 +60,39 @@ export function RingTrack({ state }: { state: GameState }) {
     el.scrollTo({ left: mid - el.clientWidth / 2, behavior: 'smooth' });
   }, [nazgulPos, frodoPos, total]);
 
+  // The panel sticks to the top of the screen with only the track showing, so the race stays in view while scrolling.
+  const sectionRef = useRef<HTMLElement>(null);
+  const [stick, setStick] = useState(0);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const section = sectionRef.current;
+    const track = scrollRef.current;
+    if (!section || !track) return;
+    const measure = () => setStick(track.getBoundingClientRect().top - section.getBoundingClientRect().top - 6);
+    const ro = new ResizeObserver(measure);
+    ro.observe(section);
+    measure();
+    let frame = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setStuck(section.getBoundingClientRect().top < 0));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
   return (
-    <section className="chase" aria-label="Missió de l'Anell">
+    <section
+      ref={sectionRef}
+      className={`chase${stuck ? ' chase-stuck' : ''}`}
+      style={{ top: -stick }}
+      aria-label="Missió de l'Anell"
+    >
       <header className="chase-head">
         <h2>Missió de l'Anell</h2>
         <p className="chase-stats">
@@ -97,13 +140,15 @@ export function RingTrack({ state }: { state: GameState }) {
                 </span>
               );
             })}
-            <span className="chase-token token-nazgul" style={{ left: inRail(s) }} aria-label={`El Nazgûl, a ${gap} caselles`}>
+            <span className={`chase-token token-nazgul${glow('sauron') ? ' vfx-ring-glow' : ''}`} style={{ left: inRail(s) }} aria-label={`El Nazgûl, a ${gap} caselles`}>
               <Glyph name="nazgul" size={22} />
+              <RingGain effect={glow('sauron')} />
             </span>
           </div>
 
-          <span className="chase-token token-frodo" style={{ left: at(frodoPos) }} aria-label={`Frodo i Sam, a ${RING_LENGTH - f} caselles del volcà`}>
+          <span className={`chase-token token-frodo${glow('fellowship') ? ' vfx-ring-glow' : ''}`} style={{ left: at(frodoPos) }} aria-label={`Frodo i Sam, a ${RING_LENGTH - f} caselles del volcà`}>
             <Glyph name="frodo" size={22} />
+            <RingGain effect={glow('fellowship')} />
           </span>
         </div>
       </div>

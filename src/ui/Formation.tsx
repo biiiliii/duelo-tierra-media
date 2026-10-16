@@ -2,6 +2,7 @@ import { isAccessible } from '../engine/engine';
 import { cardLabel } from '../engine/labels';
 import type { GameState, Side } from '../engine/types';
 import { CardBack, CardFace, costHave } from './CardView';
+import { useEffects } from './FxContext';
 
 const CARD_W = 76;
 const GAP = 6;
@@ -23,6 +24,7 @@ export function Formation({ state, selected, onSelect, disabled, viewer }: Props
   const width = 12 * half;
   const height = (rows - 1) * ROW_STEP + CARD_H;
   const left = state.slots.filter((s) => !s.taken).length;
+  const revealed = new Set(useEffects('reveal').map((e) => e.fx.slot));
   return (
     <div className="formation-wrap">
       <div className="formation" style={{ width, height }}>
@@ -33,14 +35,16 @@ export function Formation({ state, selected, onSelect, disabled, viewer }: Props
           const face = slot.faceUp
             ? <CardFace cardId={slot.cardId} have={costHave(state, viewer, slot.cardId)} />
             : <CardBack chapter={state.chapter} />;
+          const flip = revealed.has(slot.id) ? ' vfx-reveal' : '';
           if (!accessible) {
-            return <div key={slot.id} className="slot slot-covered" style={style}>{face}</div>;
+            return <div key={slot.id} className={`slot slot-covered${flip}`} style={style} data-fx={`slot-${slot.id}`}>{face}</div>;
           }
           return (
             <button
               key={slot.id}
               type="button"
-              className={`slot slot-open${selected === slot.id ? ' slot-selected' : ''}`}
+              className={`slot slot-open${selected === slot.id ? ' slot-selected' : ''}${flip}`}
+              data-fx={`slot-${slot.id}`}
               style={style}
               disabled={disabled}
               onClick={() => onSelect(slot.id)}

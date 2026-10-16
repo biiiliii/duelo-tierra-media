@@ -1,6 +1,8 @@
+import type { CSSProperties } from 'react';
 import { CONNECTIONS, REGIONS } from '../engine/data';
 import type { GameState, RegionId, Side } from '../engine/types';
-import { Piece, RegionBanner } from './Icon';
+import { useEffects, useFx } from './FxContext';
+import { Glyph, Piece, RegionBanner } from './Icon';
 
 interface Props {
   state: GameState;
@@ -49,12 +51,106 @@ function Pieces({ side, units, fortress }: { side: Side; units: number; fortress
   );
 }
 
+const pct = (x: number, y: number) => ({
+  left: `${((x - VB.x) / VB.w) * 100}%`,
+  top: `${((y - VB.y) / VB.h) * 100}%`,
+});
+
+/** What just happened on the map: units landing, marches, battles, fortresses rising and falling. */
+function MapEffects({ pos }: { pos: Record<RegionId, [number, number]> }) {
+  const effects = useEffects('units', 'move', 'conflict', 'kill', 'fortress', 'raze');
+  if (effects.length === 0) return null;
+  const at = (r: RegionId, life: number): CSSProperties => ({ ...pct(...pos[r]), ['--life' as string]: `${life}ms` });
+  const moves = effects.filter((e) => e.fx.t === 'move');
+  return (
+    <>
+      {moves.length > 0 && (
+        <svg viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`} className="vfx-map-svg" aria-hidden="true" preserveAspectRatio="none">
+          {effects.map((e) => e.fx.t === 'move' && (
+            <line
+              key={e.id}
+              className={`vfx-trail vfx-trail-${e.fx.side}`}
+              pathLength={1}
+              x1={pos[e.fx.from][0]} y1={pos[e.fx.from][1]} x2={pos[e.fx.to][0]} y2={pos[e.fx.to][1]}
+              style={{ ['--life' as string]: `${e.life}ms` }}
+            />
+          ))}
+        </svg>
+      )}
+      {effects.map((e) => {
+        const f = e.fx;
+        switch (f.t) {
+          case 'units':
+            return (
+              <div key={e.id} className={`vfx-at vfx-units vfx-side-${f.side}`} style={at(f.region, e.life)} aria-hidden="true">
+                <span className="vfx-wave" />
+                {Array.from({ length: Math.min(f.n, 4) }, (_, i) => (
+                  <span key={i} className="vfx-drop" style={{ ['--i' as string]: i, ['--n' as string]: Math.min(f.n, 4) }}>
+                    <Piece side={f.side} kind="unit" size={22} />
+                  </span>
+                ))}
+                <b className="vfx-tag">+{f.n}</b>
+              </div>
+            );
+          case 'move': {
+            const [x0, y0] = pos[f.from];
+            const [x1, y1] = pos[f.to];
+            const a = pct(x0, y0);
+            const b = pct(x1, y1);
+            return (
+              <div
+                key={e.id}
+                className={`vfx-glide vfx-side-${f.side}`}
+                style={{ ['--x0' as string]: a.left, ['--y0' as string]: a.top, ['--x1' as string]: b.left, ['--y1' as string]: b.top, ['--life' as string]: `${e.life}ms` }}
+                aria-hidden="true"
+              >
+                <Piece side={f.side} kind="unit" size={24} />
+              </div>
+            );
+          }
+          case 'conflict':
+            return (
+              <div key={e.id} className="vfx-at vfx-clash" style={at(f.region, e.life)} aria-hidden="true">
+                <span className="vfx-sparks">{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ ['--a' as string]: `${i * 36}deg` }} />)}</span>
+                <Glyph name="swords" size={40} className="vfx-swords" />
+                <b className="vfx-tag vfx-tag-left vfx-side-fellowship">−{f.n}</b>
+                <b className="vfx-tag vfx-tag-right vfx-side-sauron">−{f.n}</b>
+              </div>
+            );
+          case 'kill':
+            return (
+              <div key={e.id} className={`vfx-at vfx-kill vfx-side-${f.side}`} style={at(f.region, e.life)} aria-hidden="true">
+                <span className="vfx-victim"><Piece side={f.side} kind="unit" size={24} /></span>
+                <Glyph name="cross" size={30} className="vfx-cross" />
+                <b className="vfx-tag">−1</b>
+              </div>
+            );
+          case 'fortress':
+            return (
+              <div key={e.id} className={`vfx-at vfx-rise vfx-side-${f.side}`} style={at(f.region, e.life)} aria-hidden="true">
+                <span className="vfx-dust" />
+                <span className="vfx-tower"><Piece side={f.side} kind="fortress" size={38} /></span>
+              </div>
+            );
+          case 'raze':
+            return (
+              <div key={e.id} className={`vfx-at vfx-fall vfx-side-${f.side}`} style={at(f.region, e.life)} aria-hidden="true">
+                <span className="vfx-dust" />
+                <span className="vfx-tower"><Piece side={f.side} kind="fortress" size={38} /></span>
+              </div>
+            );
+          default:
+            return null;
+        }
+      })}
+    </>
+  );
+}
+
 export function MapView({ state, clickable, onPick }: Props) {
   const pos = Object.fromEntries(REGIONS.map((r) => [r.id, r.pos])) as Record<RegionId, [number, number]>;
-  const pct = (x: number, y: number) => ({
-    left: `${((x - VB.x) / VB.w) * 100}%`,
-    top: `${((y - VB.y) / VB.h) * 100}%`,
-  });
+  const marks = useFx()?.marks ?? {};
+  const hits = new Set(useEffects('conflict', 'kill').map((e) => e.fx.region));
   return (
     <section className="map" aria-label="Mapa de la Terra Mitjana">
       <svg viewBox={`${VB.x} ${VB.y} ${VB.w} ${VB.h}`} className="map-art" aria-hidden="true" preserveAspectRatio="none">
@@ -89,7 +185,7 @@ export function MapView({ state, clickable, onPick }: Props) {
           <button
             key={r.id}
             type="button"
-            className={`region${canPick ? ' region-pick' : ''}`}
+            className={`region${canPick ? ' region-pick' : ''}${marks[r.id] ? ` region-mark region-mark-${marks[r.id]}` : ''}${hits.has(r.id) ? ' vfx-shake' : ''}`}
             style={pct(r.pos[0], r.pos[1])}
             disabled={!canPick}
             onClick={() => onPick(r.id)}
@@ -107,6 +203,7 @@ export function MapView({ state, clickable, onPick }: Props) {
           </button>
         );
       })}
+      <MapEffects pos={pos} />
     </section>
   );
 }

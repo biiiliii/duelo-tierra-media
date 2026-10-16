@@ -6,6 +6,7 @@ import type { Color, GameState, Race, Side } from '../engine/types';
 import { CardFace } from './CardView';
 import { ChainBanner, Coin, Piece, RaceIcon, SkillMedal } from './Icon';
 import { SIDE_GLYPH } from './icons';
+import { useEffects } from './FxContext';
 
 const COLOR_ORDER: Color[] = ['grey', 'yellow', 'blue', 'green', 'red', 'purple'];
 
@@ -16,11 +17,17 @@ export function PlayerPanel({ state, side }: { state: GameState; side: Side }) {
   const races = [...raceSymbols(state, side)] as (Race | 'eagle')[];
   const active = state.current === side && !state.winner;
   const Crest = SIDE_GLYPH[side];
+  const coinFx = useEffects('coins').filter((e) => e.fx.side === side);
+  const landed = useEffects('card', 'free', 'location', 'token').some((e) => e.rival && e.fx.by === side);
   const cards = [...p.cards].sort(
     (a, b) => COLOR_ORDER.indexOf(CARDS[a].color) - COLOR_ORDER.indexOf(CARDS[b].color),
   );
   return (
-    <section className={`panel player player-${side}${active ? ' player-active' : ''}`} aria-label={SIDE_TITLES[side]}>
+    <section
+      className={`panel player player-${side}${active ? ' player-active' : ''}${landed ? ' vfx-receive' : ''}`}
+      aria-label={SIDE_TITLES[side]}
+      data-fx={`panel-${side}`}
+    >
       <header className="player-head">
         <Crest className="player-crest" aria-hidden="true" />
         <h2>{SIDE_TITLES[side]}</h2>
@@ -28,7 +35,14 @@ export function PlayerPanel({ state, side }: { state: GameState; side: Side }) {
       </header>
 
       <div className="stats">
-        <div className="stat" title="Monedes"><Coin n={p.coins} size={30} /><span>monedes</span></div>
+        <div className={`stat stat-coins${coinFx.length ? ' vfx-bump' : ''}`} title="Monedes">
+          <Coin n={p.coins} size={30} /><span>monedes</span>
+          {coinFx.map((e) => (
+            <b key={e.id} className={`vfx-float ${e.fx.n > 0 ? 'vfx-gain' : 'vfx-loss'}`} style={{ ['--life' as string]: `${e.life}ms` }} aria-hidden="true">
+              {e.fx.n > 0 ? `+${e.fx.n}` : `−${-e.fx.n}`}
+            </b>
+          ))}
+        </div>
         <div className="stat" title="Regions on és present">
           <b className="stat-big">{presence(state, side)}<small>/7</small></b><span>regions</span>
         </div>

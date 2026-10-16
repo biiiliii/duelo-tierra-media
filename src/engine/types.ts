@@ -75,8 +75,11 @@ export interface RegionState {
   fortress: Side | null;
 }
 
-/** One pending effect. Effects always belong to the player whose turn it is. */
-export type Step =
+/**
+ * One pending effect. Effects always belong to the player whose turn it is. `join`: the first effect of a card or
+ * place, whose log line is added to the one that played it ("juga carta Groga i guanya 2 monedes").
+ */
+export type Step = { join?: boolean } & (
   | { k: 'coins'; n: number }
   | { k: 'ring'; n: number }
   | { k: 'placeUnits'; n: number; regions: RegionId[] }
@@ -95,7 +98,8 @@ export type Step =
   | { k: 'wizardUnits' }
   | { k: 'wizardFirst' }
   | { k: 'wizardSecond'; exclude: RegionId }
-  | { k: 'entsTriple'; n: number };
+  | { k: 'entsTriple'; n: number }
+);
 
 export interface PromptOption {
   value: string;
@@ -132,9 +136,43 @@ export interface GameState {
   prompt: Prompt | null;
   winner: Winner | null;
   log: string[];
+  /** What happened, as data, so the UI can animate it. Grows alongside `log`. */
+  fx: Fx[];
   seed: number;
   turn: number;
 }
+
+/**
+ * One visible thing that happened. `by` is the player whose turn it was; `at` is the length of the log when it
+ * happened, so the event is described by log line `at - 1` (a 'turn' event's turn starts at line `at`).
+ */
+export type FxBody =
+  | { t: 'turn'; side: Side; extra: boolean }
+  | { t: 'chapter'; chapter: Chapter }
+  /** A card taken from the formation (its id is not given for a discard: the discard pile is hidden). */
+  | { t: 'card'; slot: number; mode: 'play' | 'discard'; cardId?: string }
+  /** A card played for free from the discard pile. */
+  | { t: 'free'; cardId: string }
+  | { t: 'location'; id: string }
+  /** Signed change in a player's coins. */
+  | { t: 'coins'; side: Side; n: number }
+  | { t: 'ring'; side: Side; from: number; to: number }
+  | { t: 'units'; side: Side; region: RegionId; n: number }
+  | { t: 'move'; side: Side; from: RegionId; to: RegionId }
+  | { t: 'conflict'; region: RegionId; n: number }
+  /** `side` lost one unit (removed by the rival). */
+  | { t: 'kill'; side: Side; region: RegionId }
+  | { t: 'fortress'; side: Side; region: RegionId }
+  /** `side` lost its fortress. */
+  | { t: 'raze'; side: Side; region: RegionId }
+  | { t: 'token'; side: Side; token: string }
+  /** `side` had to discard one of its cards. */
+  | { t: 'burn'; side: Side; cardId: string }
+  | { t: 'extra'; side: Side }
+  /** A card turned face up in the formation. */
+  | { t: 'reveal'; slot: number };
+
+export type Fx = FxBody & { by: Side; at: number };
 
 export type Action =
   | { type: 'takeCard'; slot: number; mode: 'play' | 'discard' }

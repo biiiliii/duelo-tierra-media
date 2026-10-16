@@ -54,6 +54,12 @@ export function cardLabel(cardId: string): string {
   return `carta ${COLOR_NAMES[c.color]} (${what})`;
 }
 
+/** A card being played: its effect is left out when it gets its own log line (coins, quest, units, actions). */
+export function playedCardLabel(cardId: string): string {
+  const c = CARDS[cardId];
+  return c.color === 'green' || c.color === 'grey' ? cardLabel(cardId) : `carta ${COLOR_NAMES[c.color]}`;
+}
+
 /** "des de Rohan" / "des d'Arnor" (Catalan elision before a vowel). */
 export function fromRegion(region: RegionId, prep: 'des de' | 'de' = 'des de'): string {
   const name = REGION_NAMES[region];
