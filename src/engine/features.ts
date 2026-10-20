@@ -1,6 +1,6 @@
-import { LOCATIONS, REGION_IDS, RING_LENGTH, otherSide } from './data.js';
-import { chainSymbols, locationCost, skillPool } from './costs.js';
-import { presence, raceSymbols } from './engine.js';
+import { ADJACENT, CARDS, LOCATIONS, REGION_IDS, RING_LENGTH, otherSide } from './data.js';
+import { cardCost, chainSymbols, locationCost, skillPool } from './costs.js';
+import { isAccessible, presence, raceSymbols } from './engine.js';
 import type { GameState, Side, Skill } from './types.js';
 
 const SKILLS: Skill[] = ['mask', 'fist', 'heart', 'book', 'crown'];
@@ -38,7 +38,7 @@ export function locationReach(state: GameState, side: Side): number {
 export const SIDE_FEATURES = [
   'ring', 'ringLate', 'ringNear', 'ringLast', 'races', 'races4', 'races5', 'presence', 'presence6', 'units',
   'fortresses', 'fragile', 'coins', 'coinsOver8', 'skills', 'skillsOver2', 'flexSkills', 'chains', 'tokens',
-  'comboTokens', 'reach7',
+  'comboTokens', 'reach7', 'presence5', 'unitsOver3', 'reserveEmpty', 'contested', 'reachable', 'redCards',
 ] as const;
 
 /** What one player has, as numbers (in the order of SIDE_FEATURES). */
@@ -50,11 +50,25 @@ export function sideFeatures(state: GameState, side: Side): number[] {
   let units = 0;
   let fortresses = 0;
   let fragile = 0;
+  let unitsOver3 = 0;
+  let contested = 0;
+  const opp = otherSide(side);
   for (const r of Object.values(state.regions)) {
     units += Math.min(r.units[side], 3);
+    unitsOver3 += Math.max(0, r.units[side] - 3);
+    const mine = r.units[side] > 0 || r.fortress === side;
+    if (mine && (r.units[opp] > 0 || r.fortress === opp)) contested++;
     if (r.fortress === side) fortresses++;
     else if (r.units[side] === 1) fragile++;
   }
+  // Regions where it is absent but could move in from a neighbour holding its units.
+  const reachable = REGION_IDS.filter((id) => {
+    const r = state.regions[id];
+    return r.units[side] === 0 && r.fortress !== side && ADJACENT[id].some((n) => state.regions[n].units[side] > 0);
+  }).length;
+  // Red cards on offer that it could pay for: units ready to take regions.
+  const redCards = state.slots.filter((slot) => isAccessible(state, slot) && CARDS[slot.cardId].effect.military &&
+    slot.faceUp && cardCost(state, side, slot.cardId).affordable).length;
   const pool = skillPool(state, side);
   let skills = 0;
   let skillsOver2 = 0;
@@ -69,6 +83,7 @@ export function sideFeatures(state: GameState, side: Side): number[] {
     Math.min(p.coins, 8), Math.max(0, p.coins - 8), skills, skillsOver2, pool.flexible.length,
     chainSymbols(state, side).size, p.tokens.length, p.tokens.filter((t) => COMBO_TOKENS.includes(t)).length,
     Number(pres + locationReach(state, side) >= REGION_IDS.length),
+    Number(pres >= 5), unitsOver3, Number(p.unitsSupply === 0), contested, reachable, redCards,
   ];
 }
 
