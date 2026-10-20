@@ -747,6 +747,7 @@ button.primary:hover:not(:disabled) { background: linear-gradient(180deg, #f7d47
 }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
 .drawer-head h2 { margin: 0; }
+.drawer-actions { display: flex; gap: 0.4rem; }
 .drawer ol { flex: 1; max-height: none; }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes slide-in { from { transform: translateX(40px); opacity: 0; } }

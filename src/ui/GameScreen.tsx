@@ -29,12 +29,32 @@ interface Props {
   credit?: string;
   /** Display name for a side (online player names). */
   waitingName?: (side: Side) => string;
+  /** Text copied by the log's copy button; the plain log when not given. */
+  copyLog?: () => string;
+}
+
+/** Puts text on the clipboard, falling back to a hidden text area where the Clipboard API is missing. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand('copy');
+    area.remove();
+    return ok;
+  }
 }
 
 const SPEED_LABEL: Record<Speed, string> = { normal: 'Normals', fast: 'Ràpides', off: 'Cap' };
 const NEXT_SPEED: Record<Speed, Speed> = { normal: 'fast', fast: 'off', off: 'normal' };
 
-export function GameScreen({ state: real, canAct: realCanAct, you, onAction, topbar, notice, error, credit = ICON_CREDIT, waitingName }: Props) {
+export function GameScreen({ state: real, canAct: realCanAct, you, onAction, topbar, notice, error, credit = ICON_CREDIT, waitingName, copyLog }: Props) {
   // While the rival's turn is replayed, the board shows the replay and nobody can act until it ends.
   const fx = useFxDirector(real, you);
   const state = fx.display;
@@ -42,6 +62,7 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
   const nameOf = (side: Side) => waitingName?.(side) ?? SIDE_NAMES[side];
   const [selected, setSelected] = useState<number | null>(null);
   const [logOpen, setLogOpen] = useState(false);
+  const [copied, setCopied] = useState<'ok' | 'fail' | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -54,6 +75,7 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
   }, [state.log.length, logOpen]);
 
   useEffect(() => {
+    setCopied(null);
     if (!logOpen) return;
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLogOpen(false); };
@@ -118,7 +140,16 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
           <aside className="drawer log" role="dialog" aria-modal="true" aria-label="Registre de jugades" onClick={(e) => e.stopPropagation()}>
             <header className="drawer-head">
               <h2>Registre</h2>
-              <button type="button" ref={closeRef} onClick={() => setLogOpen(false)}>Tanca</button>
+              <div className="drawer-actions">
+                <button
+                  type="button"
+                  onClick={() => copyText(copyLog?.() ?? real.log.join('\n')).then((ok) => setCopied(ok ? 'ok' : 'fail'))}
+                  onBlur={() => setCopied(null)}
+                >
+                  {copied === 'ok' ? 'Copiat!' : copied === 'fail' ? 'No s\'ha pogut copiar' : 'Copia'}
+                </button>
+                <button type="button" ref={closeRef} onClick={() => setLogOpen(false)}>Tanca</button>
+              </div>
             </header>
             <ol ref={logRef}>
               {state.log.map((line, i) => <li key={i}>{line}</li>)}
