@@ -1,5 +1,5 @@
-import { RACES, RING_LENGTH, otherSide } from './data.js';
-import { chainSymbols, skillPool } from './costs.js';
+import { LOCATIONS, RACES, REGION_IDS, RING_LENGTH, otherSide } from './data.js';
+import { chainSymbols, locationCost, skillPool } from './costs.js';
 import { applyAction, legalActions, presence, raceSymbols } from './engine.js';
 import type { Action, GameState, Side, Skill } from './types.js';
 
@@ -49,10 +49,16 @@ export interface Weights {
   /** How much more the map counts in each later chapter. */
   mapSlope: number;
   coin: number;
+  /** Share of a coin's value kept beyond 8 coins: a hoarder saves up for several key locations in a row. */
+  hoard: number;
   skill: number;
   flexSkill: number;
   chain: number;
   token: number;
+  /** Extra value of the alliances that feed combos: another turn per key location, double coins per discard... */
+  combo: number;
+  /** A rival that can build its way to 7 regions with the key locations it can already afford. */
+  burst: number;
   /** How much less the economy counts in each later chapter. */
   economySlope: number;
   threat: number;
@@ -65,7 +71,7 @@ export interface Weights {
 
 export const BASE_WEIGHTS: Weights = {
   ring: 6, ringLate: 9, races: 1, presence: 7, presence6: 30, unit: 1.2, unitCap: 3, fortress: 4, mapSlope: 0.35,
-  coin: 2, skill: 3, flexSkill: 3, chain: 2.5, token: 4, economySlope: 0.3, threat: 1, extraTurn: 6,
+  coin: 2, hoard: 0.25, skill: 3, flexSkill: 3, chain: 2.5, token: 4, combo: 0, burst: 0, economySlope: 0.3, threat: 1, extraTurn: 6,
   fragile: 0, endLead: 0,
 };
 
@@ -86,6 +92,16 @@ export const LEVELS: Record<AiLevel, LevelConfig> = {
   normal: { blunder: 0, noise: 2, samples: 1, beam: 3, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },
   hard: { blunder: 0, noise: 0, samples: 2, beam: 3, nodes: 400, ...SHALLOW, weights: TUNED_WEIGHTS },
   impossible: { blunder: 0, noise: 0, samples: 6, beam: 3, nodes: 3000, depth: 2, replies: 4, shortlist: 6, peek: 1, weights: IMPOSSIBLE_WEIGHTS },
+};
+
+/**
+ * A sparring partner for self-play that plays like the humans who beat Impossible: it collects the alliances that
+ * give extra turns and coins, saves up, and builds key locations in a row to reach 7 regions at once.
+ */
+export const SPARRING: LevelConfig = {
+  ...LEVELS.impossible,
+  wholeTurns: true,
+  weights: { ...IMPOSSIBLE_WEIGHTS, combo: 20, hoard: 0.8, fortress: 8 },
 };
 
 // ---------- evaluation ----------
@@ -114,7 +130,7 @@ function score(state: GameState, side: Side, w: Weights): number {
 
   // Economy: coins, skills and chain symbols make future cards cheaper. Worth less as the game ends.
   const economy = 1.4 - w.economySlope * (state.chapter - 1);
-  let eco = w.coin * Math.min(p.coins, 8) + 0.25 * w.coin * Math.max(0, p.coins - 8);
+  let eco = w.coin * Math.min(p.coins, 8) + w.hoard * w.coin * Math.max(0, p.coins - 8);
   const pool = skillPool(state, side);
   for (const s of SKILLS) eco += w.skill * Math.min(pool.fixed[s], 2) + (w.skill / 3) * Math.max(0, pool.fixed[s] - 2);
   eco += pool.flexible.length * w.flexSkill;
@@ -122,7 +138,37 @@ function score(state: GameState, side: Side, w: Weights): number {
   v += eco * economy;
 
   v += p.tokens.length * w.token;
+  v += p.tokens.filter((t) => COMBO_TOKENS.includes(t)).length * w.combo;
   return v;
+}
+
+const COMBO_TOKENS = ['dwarves_loc_turn', 'dwarves_loc_discount', 'men_discard_double', 'elves_yellow_turn'];
+
+/**
+ * Regions `side` could add right now by building face-up key locations where it is absent: one, or as many as its
+ * coins pay for in a row when each location gives it another turn.
+ */
+function locationReach(state: GameState, side: Side): number {
+  const p = state.players[side];
+  const costs = state.locationsFaceUp
+    .filter((id) => {
+      const r = state.regions[LOCATIONS[id].region];
+      return r.fortress !== side && r.units[side] === 0;
+    })
+    .map((id) => locationCost(state, side, id).coins)
+    .sort((a, b) => a - b);
+  if (costs.length === 0 || costs[0] > p.coins) return 0;
+  if (!p.tokens.includes('dwarves_loc_turn')) return 1;
+  // Each fortress built makes the next location 1 coin dearer, unless the discount alliance waives it.
+  const step = p.tokens.includes('dwarves_loc_discount') ? 0 : 1;
+  let spent = 0;
+  let n = 0;
+  for (const c of costs) {
+    if (spent + c + n * step > p.coins) break;
+    spent += c + n * step;
+    n++;
+  }
+  return n;
 }
 
 /** Score from `side`'s point of view: positive is good for it. */
@@ -136,6 +182,10 @@ export function evaluate(state: GameState, side: Side, w: Weights = BASE_WEIGHTS
   // Racing threats: a rival one or two steps from any victory must be stopped now.
   v -= (threat(state, opp) - threat(state, side) * 0.5) * w.threat;
   if (state.current === side && !state.prompt) v += w.extraTurn;
+  if (w.burst) {
+    const reaches = (s: Side) => presence(state, s) + locationReach(state, s) >= REGION_IDS.length;
+    v -= w.burst * (Number(reaches(opp)) - 0.5 * Number(reaches(side)));
+  }
   if (state.chapter === 3 && w.endLead) {
     const taken = state.slots.filter((slot) => slot.taken).length / state.slots.length;
     v += w.endLead * taken * Math.sign(presence(state, side) - presence(state, opp));
