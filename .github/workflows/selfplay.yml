@@ -4,8 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       spec:
-        description: Self-play spec (JSON, see scripts/selfplay.ts)
+        description: Self-play spec (JSON, see scripts/selfplay.ts or scripts/collect.ts)
         required: true
+      mode:
+        description: "selfplay: win rates of candidate configs; collect: positions for fitting the learned evaluation"
+        required: false
+        default: selfplay
 
 jobs:
   play:
@@ -24,23 +28,31 @@ jobs:
       - name: Play (one process per core)
         env:
           SPEC_JSON: ${{ inputs.spec }}
+          MODE: ${{ inputs.mode }}
         run: |
           echo "$SPEC_JSON" > spec.json
           cores=$(nproc)
           shards=$((20 * cores))
+          script=scripts/selfplay.ts
+          if [ "$MODE" = collect ]; then script=scripts/collect.ts; fi
           for c in $(seq 0 $((cores - 1))); do
             SPEC=spec.json SHARD=$((${{ matrix.job }} * cores + c)) SHARDS=$shards \
-              npx vite-node scripts/selfplay.ts > part-$c.json &
+              npx vite-node $script > part-$c.json &
           done
           wait
-          node scripts/merge-results.mjs part-*.json > result-${{ matrix.job }}.json
+          if [ "$MODE" = collect ]; then
+            cat part-*.json | gzip > rows-${{ matrix.job }}.jsonl.gz
+          else
+            node scripts/merge-results.mjs part-*.json > result-${{ matrix.job }}.json
+          fi
       - uses: actions/upload-artifact@v4
         with:
-          name: result-${{ matrix.job }}
-          path: result-${{ matrix.job }}.json
+          name: ${{ inputs.mode == 'collect' && 'rows' || 'result' }}-${{ matrix.job }}
+          path: ${{ inputs.mode == 'collect' && 'rows-*.jsonl.gz' || 'result-*.json' }}
 
   merge:
     needs: play
+    if: inputs.mode != 'collect'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
