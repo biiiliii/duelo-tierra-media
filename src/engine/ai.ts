@@ -1,5 +1,6 @@
-import { LOCATIONS, RACES, REGION_IDS, RING_LENGTH, otherSide } from './data.js';
-import { chainSymbols, locationCost, skillPool } from './costs.js';
+import { RACES, REGION_IDS, RING_LENGTH, otherSide } from './data.js';
+import { chainSymbols, skillPool } from './costs.js';
+import { COMBO_TOKENS, locationReach, predict, sample, type LearnedModel } from './features.js';
 import { applyAction, legalActions, presence, raceSymbols } from './engine.js';
 import type { Action, GameState, Side, Skill } from './types.js';
 
@@ -67,7 +68,12 @@ export interface Weights {
   fragile: number;
   /** Being ahead on regions late in chapter 3, when that decides the game. */
   endLead: number;
+  /** When given, the position is judged by this model fitted on self-play games instead of the weights above. */
+  learned?: LearnedModel;
 }
+
+/** Converts the model's winning odds (a logit) into points comparable with the hand-made evaluation. */
+const LEARNED_SCALE = 100;
 
 export const BASE_WEIGHTS: Weights = {
   ring: 6, ringLate: 9, races: 1, presence: 7, presence6: 30, unit: 1.2, unitCap: 3, fortress: 4, mapSlope: 0.35,
@@ -142,40 +148,16 @@ function score(state: GameState, side: Side, w: Weights): number {
   return v;
 }
 
-const COMBO_TOKENS = ['dwarves_loc_turn', 'dwarves_loc_discount', 'men_discard_double', 'elves_yellow_turn'];
-
-/**
- * Regions `side` could add right now by building face-up key locations where it is absent: one, or as many as its
- * coins pay for in a row when each location gives it another turn.
- */
-function locationReach(state: GameState, side: Side): number {
-  const p = state.players[side];
-  const costs = state.locationsFaceUp
-    .filter((id) => {
-      const r = state.regions[LOCATIONS[id].region];
-      return r.fortress !== side && r.units[side] === 0;
-    })
-    .map((id) => locationCost(state, side, id).coins)
-    .sort((a, b) => a - b);
-  if (costs.length === 0 || costs[0] > p.coins) return 0;
-  if (!p.tokens.includes('dwarves_loc_turn')) return 1;
-  // Each fortress built makes the next location 1 coin dearer, unless the discount alliance waives it.
-  const step = p.tokens.includes('dwarves_loc_discount') ? 0 : 1;
-  let spent = 0;
-  let n = 0;
-  for (const c of costs) {
-    if (spent + c + n * step > p.coins) break;
-    spent += c + n * step;
-    n++;
-  }
-  return n;
-}
 
 /** Score from `side`'s point of view: positive is good for it. */
 export function evaluate(state: GameState, side: Side, w: Weights = BASE_WEIGHTS): number {
   if (state.winner) {
     if (state.winner.sides.length === 2) return 0;
     return state.winner.sides[0] === side ? WIN : -WIN;
+  }
+  if (w.learned) {
+    const z = LEARNED_SCALE * predict(w.learned, sample(state));
+    return state.current === side ? z : -z;
   }
   const opp = otherSide(side);
   let v = score(state, side, w) - score(state, opp, w);

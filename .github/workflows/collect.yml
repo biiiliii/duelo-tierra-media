@@ -1,0 +1,40 @@
+name: AI collect positions
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: Collection spec (JSON, see scripts/collect.ts)
+        required: true
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      matrix:
+        job: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Collect (one process per core)
+        env:
+          SPEC_JSON: ${{ inputs.spec }}
+        run: |
+          echo "$SPEC_JSON" > spec.json
+          cores=$(nproc)
+          shards=$((20 * cores))
+          for c in $(seq 0 $((cores - 1))); do
+            SPEC=spec.json SHARD=$((${{ matrix.job }} * cores + c)) SHARDS=$shards \
+              npx vite-node scripts/collect.ts > rows-$c.jsonl &
+          done
+          wait
+          cat rows-*.jsonl | gzip > rows-${{ matrix.job }}.jsonl.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rows-${{ matrix.job }}
+          path: rows-${{ matrix.job }}.jsonl.gz
