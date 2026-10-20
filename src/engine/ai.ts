@@ -1,6 +1,7 @@
-import { RACES, REGION_IDS, RING_LENGTH, otherSide } from './data.js';
+import modelJson from '../../data/ai_model.json' with { type: 'json' };
+import { RACES, RING_LENGTH, otherSide } from './data.js';
 import { chainSymbols, skillPool } from './costs.js';
-import { COMBO_TOKENS, locationReach, predict, sample, type LearnedModel } from './features.js';
+import { COMBO_TOKENS, predict, sample, type LearnedModel } from './features.js';
 import { applyAction, legalActions, presence, raceSymbols } from './engine.js';
 import type { Action, GameState, Side, Skill } from './types.js';
 
@@ -58,8 +59,6 @@ export interface Weights {
   token: number;
   /** Extra value of the alliances that feed combos: another turn per key location, double coins per discard... */
   combo: number;
-  /** A rival that can build its way to 7 regions with the key locations it can already afford. */
-  burst: number;
   /** How much less the economy counts in each later chapter. */
   economySlope: number;
   threat: number;
@@ -77,7 +76,7 @@ const LEARNED_SCALE = 100;
 
 export const BASE_WEIGHTS: Weights = {
   ring: 6, ringLate: 9, races: 1, presence: 7, presence6: 30, unit: 1.2, unitCap: 3, fortress: 4, mapSlope: 0.35,
-  coin: 2, hoard: 0.25, skill: 3, flexSkill: 3, chain: 2.5, token: 4, combo: 0, burst: 0, economySlope: 0.3, threat: 1, extraTurn: 6,
+  coin: 2, hoard: 0.25, skill: 3, flexSkill: 3, chain: 2.5, token: 4, combo: 0, economySlope: 0.3, threat: 1, extraTurn: 6,
   fragile: 0, endLead: 0,
 };
 
@@ -86,12 +85,18 @@ export const TUNED_WEIGHTS: Weights = {
   ...BASE_WEIGHTS, races: 2.5, ring: 3, ringLate: 4, presence: 10, presence6: 40, token: 6,
 };
 
-/** Retuned by self-play, first against Hard and then against itself: skills, units and alliances matter more, early ring steps less. */
-export const IMPOSSIBLE_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill: 4.8, unit: 1.92, token: 9.6 };
+/**
+ * Retuned by self-play, first against Hard and then against itself: skills, units and alliances matter more, early ring
+ * steps less. Impossible played with these until the learned model; they remain the bar the model is measured against.
+ */
+export const HAND_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill: 4.8, unit: 1.92, token: 9.6 };
+
+/** Impossible judges positions with a model fitted on self-play games (data/ai_model.json, made by scripts/fit.ts). */
+export const IMPOSSIBLE_WEIGHTS: Weights = { ...HAND_WEIGHTS, learned: { chapters: modelJson.chapters } };
 
 const SHALLOW = { depth: 1, replies: 1, shortlist: Infinity, peek: 0 };
 
-// Impossible also expects the rival's best answer; it wins about 80% of its games against Hard.
+// Impossible also expects the rival's best answer and judges positions with the learned model.
 
 export const LEVELS: Record<AiLevel, LevelConfig> = {
   easy: { blunder: 0.4, noise: 20, samples: 1, beam: 2, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },
@@ -107,7 +112,7 @@ export const LEVELS: Record<AiLevel, LevelConfig> = {
 export const SPARRING: LevelConfig = {
   ...LEVELS.impossible,
   wholeTurns: true,
-  weights: { ...IMPOSSIBLE_WEIGHTS, combo: 20, hoard: 0.8, fortress: 8 },
+  weights: { ...HAND_WEIGHTS, combo: 20, hoard: 0.8, fortress: 8 },
 };
 
 // ---------- evaluation ----------
@@ -164,10 +169,6 @@ export function evaluate(state: GameState, side: Side, w: Weights = BASE_WEIGHTS
   // Racing threats: a rival one or two steps from any victory must be stopped now.
   v -= (threat(state, opp) - threat(state, side) * 0.5) * w.threat;
   if (state.current === side && !state.prompt) v += w.extraTurn;
-  if (w.burst) {
-    const reaches = (s: Side) => presence(state, s) + locationReach(state, s) >= REGION_IDS.length;
-    v -= w.burst * (Number(reaches(opp)) - 0.5 * Number(reaches(side)));
-  }
   if (state.chapter === 3 && w.endLead) {
     const taken = state.slots.filter((slot) => slot.taken).length / state.slots.length;
     v += w.endLead * taken * Math.sign(presence(state, side) - presence(state, opp));
