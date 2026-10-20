@@ -26,6 +26,8 @@ export interface LevelConfig {
   shortlist: number;
   /** Pending decisions looked through when ranking options, so a card is judged by its best follow-up. */
   peek: number;
+  /** Extra turns belong to the turn that earned them, so a rival's combo of several turns in a row is seen whole. */
+  wholeTurns?: boolean;
   weights: Weights;
 }
 
@@ -245,7 +247,10 @@ function turnEnds(state: GameState, cfg: LevelConfig, budget: Budget): { s: Game
 function lookahead(state: GameState, side: Side, turns: number, cfg: LevelConfig, budget: Budget): number {
   if (state.winner || turns === 0 || budget.nodes <= 0) return evaluate(state, side, cfg.weights);
   const ends = turnEnds(state, cfg, budget).slice(0, cfg.replies);
-  const values = ends.map((e) => lookahead(e.s, side, turns - 1, cfg, budget));
+  const values = ends.map((e) => {
+    const sameMover = cfg.wholeTurns && !e.s.winner && e.s.current === state.current;
+    return lookahead(e.s, side, sameMover ? turns : turns - 1, cfg, budget);
+  });
   return state.current === side ? Math.max(...values) : Math.min(...values);
 }
 
