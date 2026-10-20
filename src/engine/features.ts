@@ -39,6 +39,8 @@ export const SIDE_FEATURES = [
   'ring', 'ringLate', 'ringNear', 'ringLast', 'races', 'races4', 'races5', 'presence', 'presence6', 'units',
   'fortresses', 'fragile', 'coins', 'coinsOver8', 'skills', 'skillsOver2', 'flexSkills', 'chains', 'tokens',
   'comboTokens', 'reach7', 'presence5', 'unitsOver3', 'reserveEmpty', 'contested', 'reachable', 'redCards',
+  // Fortresses are presence no conflict can take away: many of them all but decide the end of chapter 3.
+  'fortresses4', 'fortresses5', 'fortresses6',
 ] as const;
 
 /** What one player has, as numbers (in the order of SIDE_FEATURES). */
@@ -84,6 +86,7 @@ export function sideFeatures(state: GameState, side: Side): number[] {
     chainSymbols(state, side).size, p.tokens.length, p.tokens.filter((t) => COMBO_TOKENS.includes(t)).length,
     Number(pres + locationReach(state, side) >= REGION_IDS.length),
     Number(pres >= 5), unitsOver3, Number(p.unitsSupply === 0), contested, reachable, redCards,
+    Number(fortresses >= 4), Number(fortresses >= 5), Number(fortresses >= 6),
   ];
 }
 
