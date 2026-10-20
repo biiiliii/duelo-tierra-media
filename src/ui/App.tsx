@@ -14,7 +14,7 @@ type Route =
   | { kind: 'ai'; level: AiLevel; side: Side };
 
 // Catalan URL values: ?ia=normal&bandol=comunitat
-const LEVEL_PARAM: Record<AiLevel, string> = { easy: 'facil', normal: 'normal', hard: 'dificil', impossible: 'impossible' };
+const LEVEL_PARAM: Record<AiLevel, string> = { easy: 'facil', normal: 'normal', hard: 'dificil', impossible: 'impossible', apocalypse: 'apocalipsi' };
 const SIDE_PARAM: Record<Side, string> = { fellowship: 'comunitat', sauron: 'sauron' };
 const fromParam = <K extends string>(map: Record<K, string>, value: string | null) =>
   (Object.keys(map) as K[]).find((k) => map[k] === value);

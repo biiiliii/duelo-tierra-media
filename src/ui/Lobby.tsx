@@ -22,7 +22,8 @@ const AI_LEVELS: { value: AiLevel; hint: string }[] = [
   { value: 'easy', hint: 'Per aprendre a jugar.' },
   { value: 'normal', hint: 'Un rival raonable.' },
   { value: 'hard', hint: 'No perdona.' },
-  { value: 'impossible', hint: 'Preveu la teva resposta i ha après de 100.000 partides. Guanya el Difícil 19 de cada 20 cops.' },
+  { value: 'impossible', hint: 'Preveu la teva resposta abans de jugar. Guanya el Difícil 4 de cada 5 cops.' },
+  { value: 'apocalypse', hint: 'Ha jugat 100.000 partides contra si mateixa i ja no li queden amics. Fa plorar l\'Impossible 5 de cada 6 cops. Ves-hi amb un mocador.' },
 ];
 
 export function Lobby({ onEnterRoom, onLocal, onAi }: Props) {
@@ -116,7 +117,7 @@ export function Lobby({ onEnterRoom, onLocal, onAi }: Props) {
             <h2>Juga contra la IA</h2>
             <fieldset className="seg-pick">
               <legend>Dificultat</legend>
-              <div className="seg">
+              <div className="seg seg-levels">
                 {AI_LEVELS.map((l) => (
                   <label key={l.value} className={aiLevel === l.value ? 'checked' : undefined} title={l.hint}>
                     <input type="radio" name="ai-level" value={l.value} checked={aiLevel === l.value} onChange={() => setAiLevel(l.value)} />

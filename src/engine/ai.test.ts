@@ -43,6 +43,7 @@ describe('AI', () => {
     play({ fellowship: 'normal', sauron: 'easy' }, 12);
     play({ fellowship: 'hard', sauron: 'normal' }, 13);
     play({ fellowship: 'impossible', sauron: 'hard' }, 14);
+    play({ fellowship: 'apocalypse', sauron: 'impossible' }, 15);
   }, 60_000);
 
   it('hard beats easy most of the time', () => {

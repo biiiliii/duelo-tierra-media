@@ -5,7 +5,7 @@ import { COMBO_TOKENS, predict, sample, type LearnedModel } from './features.js'
 import { applyAction, legalActions, presence, raceSymbols } from './engine.js';
 import type { Action, GameState, Side, Skill } from './types.js';
 
-export type AiLevel = 'easy' | 'normal' | 'hard' | 'impossible';
+export type AiLevel = 'easy' | 'normal' | 'hard' | 'impossible' | 'apocalypse';
 
 type Rand = () => number;
 
@@ -85,24 +85,23 @@ export const TUNED_WEIGHTS: Weights = {
   ...BASE_WEIGHTS, races: 2.5, ring: 3, ringLate: 4, presence: 10, presence6: 40, token: 6,
 };
 
-/**
- * Retuned by self-play, first against Hard and then against itself: skills, units and alliances matter more, early ring
- * steps less. Impossible played with these until the learned model; they remain the bar the model is measured against.
- */
-export const HAND_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill: 4.8, unit: 1.92, token: 9.6 };
+/** Retuned by self-play, first against Hard and then against itself: skills, units and alliances matter more, early ring steps less. */
+export const IMPOSSIBLE_WEIGHTS: Weights = { ...TUNED_WEIGHTS, ring: 1.5, skill: 4.8, unit: 1.92, token: 9.6 };
 
-/** Impossible judges positions with a model fitted on self-play games (data/ai_model.json, made by scripts/fit.ts). */
-export const IMPOSSIBLE_WEIGHTS: Weights = { ...HAND_WEIGHTS, learned: { chapters: modelJson.chapters } };
+/** Apocalypse judges positions with a model fitted on self-play games (data/ai_model.json, made by scripts/fit.ts). */
+export const APOCALYPSE_WEIGHTS: Weights = { ...IMPOSSIBLE_WEIGHTS, learned: { chapters: modelJson.chapters } };
 
 const SHALLOW = { depth: 1, replies: 1, shortlist: Infinity, peek: 0 };
 
-// Impossible also expects the rival's best answer and judges positions with the learned model.
+// Impossible also expects the rival's best answer; it wins about 80% of its games against Hard.
+// Apocalypse searches like Impossible but judges positions with the learned model: 95% against Hard, 84% against Impossible.
 
 export const LEVELS: Record<AiLevel, LevelConfig> = {
   easy: { blunder: 0.4, noise: 20, samples: 1, beam: 2, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },
   normal: { blunder: 0, noise: 2, samples: 1, beam: 3, nodes: 400, ...SHALLOW, weights: BASE_WEIGHTS },
   hard: { blunder: 0, noise: 0, samples: 2, beam: 3, nodes: 400, ...SHALLOW, weights: TUNED_WEIGHTS },
   impossible: { blunder: 0, noise: 0, samples: 6, beam: 3, nodes: 3000, depth: 2, replies: 4, shortlist: 6, peek: 1, weights: IMPOSSIBLE_WEIGHTS },
+  apocalypse: { blunder: 0, noise: 0, samples: 6, beam: 3, nodes: 3000, depth: 2, replies: 4, shortlist: 6, peek: 1, weights: APOCALYPSE_WEIGHTS },
 };
 
 /**
@@ -112,7 +111,7 @@ export const LEVELS: Record<AiLevel, LevelConfig> = {
 export const SPARRING: LevelConfig = {
   ...LEVELS.impossible,
   wholeTurns: true,
-  weights: { ...HAND_WEIGHTS, combo: 20, hoard: 0.8, fortress: 8 },
+  weights: { ...IMPOSSIBLE_WEIGHTS, combo: 20, hoard: 0.8, fortress: 8 },
 };
 
 // ---------- evaluation ----------

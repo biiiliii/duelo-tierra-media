@@ -7,7 +7,7 @@
  * Spec: { policy: { base, ...overrides }, firstSeed, games, rate } where `rate` is the chance of keeping a turn's start.
  */
 import { readFileSync } from 'node:fs';
-import { LEVELS, SPARRING, chooseAction, evaluate, HAND_WEIGHTS, type AiLevel, type LevelConfig } from '../src/engine/ai';
+import { LEVELS, SPARRING, chooseAction, evaluate, IMPOSSIBLE_WEIGHTS, type AiLevel, type LevelConfig } from '../src/engine/ai';
 import { applyAction, newGame } from '../src/engine/engine';
 import { sample } from '../src/engine/features';
 import type { Side } from '../src/engine/types';
@@ -44,7 +44,7 @@ for (let g = shard; g < spec.games; g += shards) {
       lastTurn = s.turn;
       if (rand() < spec.rate) {
         const x = sample(s);
-        const hand = evaluate(s, s.current, HAND_WEIGHTS);
+        const hand = evaluate(s, s.current, IMPOSSIBLE_WEIGHTS);
         rows.push({ mover: s.current, row: [seed, x.chapter, +x.progress.toFixed(3), x.sauron, x.extraTurns, ...x.diff, +hand.toFixed(2)] });
       }
     }

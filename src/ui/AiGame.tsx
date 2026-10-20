@@ -6,7 +6,7 @@ import type { Action, GameState, Side } from '../engine/types';
 import type { AiRequest } from './aiWorker';
 import { GameScreen } from './GameScreen';
 
-export const AI_LEVEL_NAMES: Record<AiLevel, string> = { easy: 'Fàcil', normal: 'Normal', hard: 'Difícil', impossible: 'Impossible' };
+export const AI_LEVEL_NAMES: Record<AiLevel, string> = { easy: 'Fàcil', normal: 'Normal', hard: 'Difícil', impossible: 'Impossible', apocalypse: 'Apocalipsi' };
 
 interface Props {
   level: AiLevel;

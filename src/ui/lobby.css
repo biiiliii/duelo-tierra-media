@@ -103,6 +103,13 @@
 .seg label.checked { background: #2c404c; color: var(--gold); box-shadow: inset 0 -3px 0 var(--gold); }
 .seg label.seg-fellowship.checked { color: var(--fellowship); box-shadow: inset 0 -3px 0 var(--fellowship); }
 .seg label.seg-sauron.checked { color: var(--sauron); box-shadow: inset 0 -3px 0 var(--sauron); }
+/* Five levels do not fit in one row on a phone: three on top, the two hardest below. */
+@media (max-width: 520px) {
+  .seg-levels { grid-auto-flow: row; grid-template-columns: repeat(6, 1fr); gap: 1px; background: #3a4e5a; }
+  .seg-levels label + label { border-left: 0; }
+  .seg-levels label { grid-column: span 2; }
+  .seg-levels label:nth-child(n + 4) { grid-column: span 3; }
+}
 .seg-hint { font-size: 0.88rem; font-style: italic; }
 
 .lobby-primary {
