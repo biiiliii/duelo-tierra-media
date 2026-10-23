@@ -16,7 +16,10 @@ export function locationReach(state: GameState, side: Side): number {
   const p = state.players[side];
   const costs = state.locationsFaceUp
     .filter((id) => {
-      const r = state.regions[LOCATIONS[id].region];
+      // The promo tiles name no region of their own.
+      const region = LOCATIONS[id].region;
+      if (!region) return false;
+      const r = state.regions[region];
       return r.fortress !== side && r.units[side] === 0;
     })
     .map((id) => locationCost(state, side, id).coins)

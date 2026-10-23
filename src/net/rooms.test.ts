@@ -72,4 +72,17 @@ describe('rooms', () => {
     expect(s.slots.filter((sl) => !sl.faceUp).every((sl) => sl.cardId === HIDDEN)).toBe(true);
     expect(s.slots.filter((sl) => sl.faceUp).every((sl) => sl.cardId !== HIDDEN)).toBe(true);
   });
+
+  it('creates a room with the chosen promo tiles, ignores unknown ones and keeps them for the rematch', async () => {
+    const store = new MemoryStore();
+    const host = await createRoom(store, 'sauron', 'Anna', ['grond', 'balrog' as never]);
+    expect(host.room.state.expansions).toEqual(['grond']);
+    const guest = await joinRoom(store, host.code, 'Biel');
+    const record = (await store.get(host.code))!;
+    record.state.winner = { sides: ['sauron'], reason: 'prova' };
+    await store.save(record, record.version);
+    const again = await rematch(store, host.code, guest.token);
+    expect(again.state.expansions).toEqual(['grond']);
+    expect(again.state.locationDeck).toHaveLength(5);
+  });
 });

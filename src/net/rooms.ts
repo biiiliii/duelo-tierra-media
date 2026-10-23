@@ -1,6 +1,7 @@
 import { IllegalAction, applyAction, newGame } from '../engine/engine.js';
 import { redact } from '../engine/view.js';
-import type { Action, GameState, Side } from '../engine/types.js';
+import { EXPANSIONS } from '../engine/data.js';
+import type { Action, Expansion, GameState, Side } from '../engine/types.js';
 import type { JoinResult, PollResult, RoomView, SeatChoice } from './protocol.js';
 
 /** Persisted room. Tokens are secrets that identify each seat. */
@@ -64,14 +65,17 @@ export function toView(record: RoomRecord, token?: string): RoomView {
   };
 }
 
-export async function createRoom(store: RoomStore, side: SeatChoice, name: string): Promise<JoinResult> {
+export async function createRoom(
+  store: RoomStore, side: SeatChoice, name: string, expansions: Expansion[] = [],
+): Promise<JoinResult> {
   const mySide: Side = side === 'random' ? (Math.random() < 0.5 ? 'fellowship' : 'sauron') : side;
+  const promos = EXPANSIONS.filter((e) => Array.isArray(expansions) && expansions.includes(e));
   const token = randomString(CODE_ALPHABET + 'abcdefghijkmnpqrstuvwxyz', 32);
   for (let attempt = 0; attempt < 10; attempt++) {
     const record: RoomRecord = {
       code: randomString(CODE_ALPHABET, 5),
       version: 1,
-      state: newGame(crypto.getRandomValues(new Uint32Array(1))[0]),
+      state: newGame(crypto.getRandomValues(new Uint32Array(1))[0], promos),
       seats: { fellowship: { token: null, name: null }, sauron: { token: null, name: null } },
       createdAt: Date.now(),
     };
@@ -138,7 +142,8 @@ export async function rematch(store: RoomStore, code: string, token: string): Pr
   if (!seatOf(record, token)) throw new RoomError('No ets jugador d\'aquesta sala.', 403);
   if (!record.state.winner) throw new RoomError('La partida encara no ha acabat.', 409);
   const expected = record.version;
-  record.state = newGame(crypto.getRandomValues(new Uint32Array(1))[0]);
+  // The rematch keeps the promo tiles the room was created with.
+  record.state = newGame(crypto.getRandomValues(new Uint32Array(1))[0], record.state.expansions ?? []);
   record.version++;
   if (!(await store.save(record, expected))) throw new RoomError('La sala ha canviat. Torna-ho a provar.', 409);
   return toView(record, token);

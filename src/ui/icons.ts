@@ -3,12 +3,12 @@ import {
   GiAcorn, GiAllSeeingEye, GiAnticlockwiseRotation, GiAnvil, GiArrowhead, GiBattleAxe, GiBookCover, GiBowArrow,
   GiBreastplate, GiBroadsword, GiBurningEye, GiCampfire, GiCoinsPile, GiCookingPot, GiCrestedHelmet, GiCrossMark,
   GiCrossedSwords, GiCrown, GiCrystalBall, GiDualityMask, GiFeather, GiFist, GiHarp, GiHeartburn,
-  GiHoodedFigure, GiHorseHead, GiHorseshoe, GiHuntingHorn, GiInkSwirl, GiMapleLeaf, GiOakLeaf, GiOpenTreasureChest,
-  GiPawn, GiRing, GiSailboat, GiScrollUnfurled, GiSmokingPipe, GiSpectre, GiStandingPotion, GiStoneTower,
+  GiHobbitDwelling, GiHoodedFigure, GiHorseHead, GiHorseshoe, GiHuntingHorn, GiInkSwirl, GiMapleLeaf, GiOakLeaf, GiOpenTreasureChest,
+  GiPawn, GiRing, GiSailboat, GiScrollUnfurled, GiSiegeRam, GiSmokingPipe, GiSpectre, GiStandingPotion, GiStoneTower,
   GiSunRadiations, GiTeapot, GiTiedScroll, GiTropicalFish, GiTwoCoins, GiVisoredHelm, GiVolcano, GiWarhammer,
   GiWillowTree,
 } from 'react-icons/gi';
-import type { Race, RegionId, Side, Skill } from '../engine/types';
+import type { Expansion, Race, RegionId, Side, Skill } from '../engine/types';
 
 /** Must be shown somewhere in the app (CC BY 3.0 attribution). */
 export const ICON_CREDIT = 'Icones de game-icons.net (Lorc, Delapouite i altres), llicència CC BY 3.0.';
@@ -71,4 +71,10 @@ export const REGION_COLOR: Record<RegionId, string> = {
 export const REGION_EMBLEM: Record<RegionId, string> = {
   lindon: '#f4f1e6', arnor: '#e0b44a', rhovanion: '#f6e27a', enedwaith: '#f1e6f0',
   rohan: '#f4f1e6', gondor: '#f4f1e6', mordor: '#f2c14a',
+};
+
+/** Banners of the promo tiles, which have no region of their own: glyph, banner colour and emblem colour. */
+export const PROMO_BANNER: Record<Expansion, { glyph: IconType; color: string; emblem: string }> = {
+  shire: { glyph: GiHobbitDwelling, color: '#4f8f3a', emblem: '#f6e9b0' },
+  grond: { glyph: GiSiegeRam, color: '#2b2622', emblem: '#e8833a' },
 };

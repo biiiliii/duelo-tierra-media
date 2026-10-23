@@ -1,5 +1,5 @@
 import { applyAction, newGame } from './engine.js';
-import type { Action, GameState, Side } from './types.js';
+import type { Action, Expansion, GameState, Side } from './types.js';
 
 /**
  * Everything needed to rebuild a game exactly: the seed deals the cards, so the seed plus every move (the AI's
@@ -8,6 +8,8 @@ import type { Action, GameState, Side } from './types.js';
 export interface GameRecord {
   seed: number;
   actions: Action[];
+  /** Promo tiles in play, if any. */
+  expansions?: Expansion[];
   /** AI level the human played against, if any. */
   level?: string;
   you?: Side;
@@ -35,9 +37,10 @@ export function decodeAction(s: string): Action {
   return { type: 'takeCard', slot, mode };
 }
 
-/** One line of text: DUELO1;seed=…;ia=…;tu=…;desfes=…;v=…;jugades=p3,d5,l:bree,o:arnor */
+/** One line of text: DUELO1;seed=…;exp=shire+grond;ia=…;tu=…;desfes=…;v=…;jugades=p3,d5,l:bree,o:arnor */
 export function encodeRecord(r: GameRecord): string {
   const fields = [PREFIX, `seed=${r.seed}`];
+  if (r.expansions?.length) fields.push(`exp=${r.expansions.join('+')}`);
   if (r.level) fields.push(`ia=${r.level}`);
   if (r.you) fields.push(`tu=${r.you}`);
   if (r.undos !== undefined) fields.push(`desfes=${r.undos}`);
@@ -57,6 +60,7 @@ export function decodeRecord(text: string): GameRecord {
   return {
     seed: Number(fields.seed),
     actions: fields.jugades ? fields.jugades.split(',').map(decodeAction) : [],
+    expansions: fields.exp ? (fields.exp.split('+') as Expansion[]) : undefined,
     level: fields.ia,
     you: fields.tu as Side | undefined,
     undos: fields.desfes === undefined ? undefined : Number(fields.desfes),
@@ -66,7 +70,7 @@ export function decodeRecord(text: string): GameRecord {
 
 /** Every position of the game, from the deal to the last move. */
 export function replay(r: GameRecord): GameState[] {
-  const states = [newGame(r.seed)];
+  const states = [newGame(r.seed, r.expansions)];
   for (const a of r.actions) states.push(applyAction(states[states.length - 1], a));
   return states;
 }

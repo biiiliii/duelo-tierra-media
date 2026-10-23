@@ -139,3 +139,36 @@
 .vs-sauron { color: var(--sauron); font-weight: 700; }
 .invite-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
 .invite-row input { flex: 1; min-width: 0; }
+
+/* ---------- optional promo tiles ---------- */
+.promo-pick { min-width: 0; }
+.promo-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.75rem; }
+.promo-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #3a4e5a;
+  border-radius: 9px;
+  background: #1c2930;
+  cursor: pointer;
+}
+.promo-option:hover { border-color: #56707e; }
+.promo-option input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.promo-option:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+.promo-option > span:nth-of-type(2) { display: flex; flex-direction: column; gap: 0.1rem; flex: 1; min-width: 0; }
+.promo-option b { color: #f1e3bd; }
+.promo-option small { color: var(--ink-soft); font-size: 0.85rem; }
+.promo-option.checked { border-color: var(--gold); background: #2c404c; box-shadow: inset 0 0 0 1px rgba(224, 180, 74, 0.35); }
+.promo-switch {
+  flex: none;
+  min-width: 2.6rem;
+  text-align: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid #4a606d;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.promo-option.checked .promo-switch { border-color: var(--gold); color: var(--gold); }

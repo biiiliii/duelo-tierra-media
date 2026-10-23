@@ -4,7 +4,7 @@ import { otherSide } from '../engine/data';
 import { IllegalAction, applyAction, newGame } from '../engine/engine';
 import { SIDE_NAMES } from '../engine/labels';
 import { encodeRecord } from '../engine/replay';
-import type { Action, GameState, Side } from '../engine/types';
+import type { Action, Expansion, GameState, Side } from '../engine/types';
 import type { AiRequest } from './aiWorker';
 import { GameScreen } from './GameScreen';
 
@@ -13,6 +13,8 @@ export const AI_LEVEL_NAMES: Record<AiLevel, string> = { easy: 'Fàcil', normal:
 interface Props {
   level: AiLevel;
   you: Side;
+  /** Promo tiles to play with. */
+  expansions: Expansion[];
   onExit: () => void;
 }
 
@@ -20,13 +22,13 @@ interface Props {
 /** A position and the move that led to it (none for the deal). */
 interface Step { state: GameState; action: Action | null }
 
-function deal(): { seed: number; history: Step[] } {
+function deal(expansions: Expansion[]): { seed: number; history: Step[] } {
   const seed = Date.now() | 0;
-  return { seed, history: [{ state: newGame(seed), action: null }] };
+  return { seed, history: [{ state: newGame(seed, expansions), action: null }] };
 }
 
-export function AiGame({ level, you, onExit }: Props) {
-  const [game, setGame] = useState(deal);
+export function AiGame({ level, you, expansions, onExit }: Props) {
+  const [game, setGame] = useState(() => deal(expansions));
   const [undos, setUndos] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const history = game.history;
@@ -76,7 +78,7 @@ export function AiGame({ level, you, onExit }: Props) {
 
   const restart = () => {
     if (state.winner || window.confirm('Vols començar una partida nova? Es perdrà la partida actual.')) {
-      setGame(deal());
+      setGame(deal(expansions));
       setUndos(0);
       setError(null);
     }
@@ -94,7 +96,7 @@ export function AiGame({ level, you, onExit }: Props) {
     '',
     'Codi de la partida (per reproduir-la):',
     encodeRecord({
-      seed: game.seed, level, you, undos, version: __APP_VERSION__,
+      seed: game.seed, expansions, level, you, undos, version: __APP_VERSION__,
       actions: history.slice(1).map((h) => h.action!),
     }),
   ].join('\n');

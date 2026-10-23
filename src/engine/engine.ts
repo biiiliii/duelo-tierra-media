@@ -1,11 +1,11 @@
 import {
-  ADJACENT, CARDS, CHAPTER_CARDS, FORMATIONS, LOCATIONS, MAP_SETUP, PIECES, RACES, REGION_IDS,
+  ADJACENT, BASE_LOCATIONS, CARDS, CHAPTER_CARDS, EXPANSIONS, FORMATIONS, LOCATIONS, MAP_SETUP, PIECES, RACES, REGION_IDS,
   RING_BONUSES, RING_LENGTH, TOKENS, otherSide,
 } from './data.js';
 import { cardCost, locationCost } from './costs.js';
 import { RACE_NAMES, REGION_NAMES, SIDE_NAMES, cardLabel, fromRegion, playedCardLabel, tokenLabel } from './labels.js';
 import type {
-  Action, Chapter, Fx, FxBody, GameState, PlayerState, Prompt, PromptOption, Race, RegionId, RegionState, Side,
+  Action, Chapter, Expansion, Fx, FxBody, GameState, PlayerState, Prompt, PromptOption, Race, RegionId, RegionState, Side,
   Slot, Step,
 } from './types.js';
 
@@ -44,7 +44,8 @@ function newPlayer(side: Side): PlayerState {
   };
 }
 
-export function newGame(seed: number = Date.now()): GameState {
+/** A new game; `expansions` adds the chosen promo tiles to the key location stack. */
+export function newGame(seed: number = Date.now(), expansions: Expansion[] = []): GameState {
   const regions = Object.fromEntries(
     REGION_IDS.map((id) => [id, { units: { fellowship: 0, sauron: 0 }, fortress: null }]),
   ) as Record<RegionId, RegionState>;
@@ -79,11 +80,18 @@ export function newGame(seed: number = Date.now()): GameState {
       Object.values(TOKENS).filter((t) => t.race === race).map((t) => t.id),
     );
   }
-  const locs = shuffle(state, Object.keys(LOCATIONS));
+  const locs = shuffle(state, BASE_LOCATIONS);
   state.locationsFaceUp = locs.slice(0, 3);
   state.locationDeck = locs.slice(3);
+  // The promo tiles go into the stack after the first 3 are revealed (and only then, so base games deal as before).
+  const promos = EXPANSIONS.filter((e) => expansions.includes(e));
+  if (promos.length > 0) {
+    state.expansions = promos;
+    state.locationDeck = shuffle(state, [...state.locationDeck, ...promos]);
+  }
   setupChapter(state, 1);
-  log(state, 'Comença la partida. Sauron juga primer.');
+  log(state, 'Comença la partida' +
+    (promos.length > 0 ? ` amb ${promos.map((e) => LOCATIONS[e].name).join(' i ')}` : '') + '. Sauron juga primer.');
   emit(state, { t: 'turn', side: 'sauron', extra: false });
   return state;
 }
@@ -428,6 +436,28 @@ function runStep(state: GameState, step: Step): void {
         greys.map((c) => ({ value: c, label: cardLabel(c) })));
       return;
     }
+    case 'playVisible': {
+      const visible = state.slots.filter((s) => s.faceUp && !s.taken);
+      if (visible.length === 0) return;
+      ask(state, step, 'La Comarca: tria 1 carta boca amunt per jugar-la gratis, encara que estigui tapada.', 'card',
+        visible.map((s) => ({ value: s.cardId, label: cardLabel(s.cardId) })));
+      return;
+    }
+    case 'grondRaze': {
+      const regions = REGION_IDS.filter((r) => state.regions[r].fortress === otherSide(side));
+      if (regions.length === 0) {
+        log(state, `${SIDE_NAMES[side]} no troba cap fortalesa enemiga per a Grond.`, step.join);
+        return;
+      }
+      ask(state, step, 'Grond: tria quina fortalesa enemiga enderrocar.', 'region', regionOptions(regions));
+      return;
+    }
+    case 'grondRetreat': {
+      const n = state.regions[step.region].units[otherSide(side)];
+      ask(state, step, `Tria cap a on fugen les ${n} unitat${n > 1 ? 's' : ''} enemigues ${fromRegion(step.region)}.`, 'region',
+        regionOptions(ADJACENT[step.region]));
+      return;
+    }
     case 'wizardUnits':
       if (me.unitsSupply === 0) return;
       ask(state, step, 'Mags: com vols col·locar les unitats?', 'choice', [
@@ -529,6 +559,36 @@ function resolveChoice(state: GameState, prompt: Prompt, value: string): void {
       state.discard.push(value);
       log(state, `${SIDE_NAMES[side]} fa descartar ${cardLabel(value)} al rival.`);
       emit(state, { t: 'burn', side: opp, cardId: value });
+      return;
+    }
+    case 'playVisible': {
+      const slot = state.slots.find((s) => s.cardId === value)!;
+      slot.taken = true;
+      state.players[side].cards.push(value);
+      log(state, `${SIDE_NAMES[side]} juga ${playedCardLabel(value)} gratis.`);
+      emit(state, { t: 'card', slot: slot.id, mode: 'play', cardId: value });
+      state.queue.unshift(...joined(cardSteps(state, side, value, false)));
+      return;
+    }
+    case 'grondRaze': {
+      const r = value as RegionId;
+      state.regions[r].fortress = null;
+      state.players[opp].fortressSupply++;
+      log(state, `Grond enderroca la fortalesa enemiga ${fromRegion(r, 'de')}.`);
+      emit(state, { t: 'raze', side: opp, region: r });
+      const then: Step[] = [{ k: 'placeFortress', region: r }, { k: 'placeUnits', n: 1, regions: [r] }];
+      if (state.regions[r].units[opp] > 0) then.unshift({ k: 'grondRetreat', region: r });
+      state.queue.unshift(...then);
+      return;
+    }
+    case 'grondRetreat': {
+      const to = value as RegionId;
+      const n = state.regions[step.region].units[opp];
+      state.regions[step.region].units[opp] = 0;
+      state.regions[to].units[opp] += n;
+      log(state, `${n} unitat${n > 1 ? 's' : ''} de ${SIDE_NAMES[opp]} ${n > 1 ? 'fugen' : 'fuig'} ${fromRegion(step.region, 'de')} cap a ${REGION_NAMES[to]}.`);
+      for (let i = 0; i < n; i++) emit(state, { t: 'move', side: opp, from: step.region, to });
+      resolveConflict(state, to);
       return;
     }
     case 'wizardUnits':
@@ -642,11 +702,11 @@ export function applyAction(prev: GameState, action: Action): GameState {
     me.coins -= quote.coins;
     me.locations.push(action.id);
     state.locationsFaceUp = state.locationsFaceUp.filter((id) => id !== action.id);
-    log(state, `${SIDE_NAMES[side]} construeix ${loc.name} (${REGION_NAMES[loc.region]})` +
+    log(state, `${SIDE_NAMES[side]} construeix ${loc.name}${loc.region ? ` (${REGION_NAMES[loc.region]})` : ''}` +
       (quote.coins > 0 ? ` pagant ${coinWord(quote.coins)}` : '') + '.');
     emit(state, { t: 'location', id: action.id });
     if (quote.coins > 0) emit(state, { t: 'coins', side, n: -quote.coins });
-    state.queue.push({ k: 'placeFortress', region: loc.region });
+    if (loc.region) state.queue.push({ k: 'placeFortress', region: loc.region });
     const effects: Step[] = [];
     for (const e of loc.effects) {
       if (e.type === 'place_units') effects.push({ k: 'placeUnits', n: e.n, regions: [e.region] });
@@ -656,6 +716,8 @@ export function applyAction(prev: GameState, action: Action): GameState {
       else if (e.type === 'play_from_discard') effects.push({ k: 'playFromDiscard' });
       else if (e.type === 'discard_opponent_grey') effects.push({ k: 'discardOppGrey' });
       else if (e.type === 'alliance_any_race') effects.push({ k: 'allianceAnyRace' });
+      else if (e.type === 'play_visible') effects.push({ k: 'playVisible' });
+      else if (e.type === 'grond') effects.push({ k: 'grondRaze' });
     }
     state.queue.push(...joined(effects));
     if (hasToken(state, side, 'dwarves_loc_turn')) state.queue.push({ k: 'extraTurn' });

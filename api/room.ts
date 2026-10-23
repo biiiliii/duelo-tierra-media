@@ -33,7 +33,7 @@ export async function POST(request: Request): Promise<Response> {
     const s = getStore();
     switch (body.op) {
       case 'create':
-        return Response.json(await createRoom(s, body.side, body.name), { headers: noStore });
+        return Response.json(await createRoom(s, body.side, body.name, body.expansions), { headers: noStore });
       case 'join':
         return Response.json(await joinRoom(s, body.code, body.name, body.token), { headers: noStore });
       case 'action':

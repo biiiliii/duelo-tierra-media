@@ -1,16 +1,22 @@
 import { useState, type FormEvent } from 'react';
 import type { AiLevel } from '../engine/ai';
-import type { Side } from '../engine/types';
+import type { Expansion, Side } from '../engine/types';
 import type { SeatChoice } from '../net/protocol';
 import { AI_LEVEL_NAMES } from './AiGame';
-import { createRoom, loadName, saveName } from '../net/client';
+import { createRoom, loadExpansions, loadName, saveExpansions, saveName } from '../net/client';
+import { LocationBanner } from './Icon';
 import './lobby.css';
 
 interface Props {
   onEnterRoom: (code: string) => void;
-  onLocal: () => void;
-  onAi: (level: AiLevel, side: Side) => void;
+  onLocal: (expansions: Expansion[]) => void;
+  onAi: (level: AiLevel, side: Side, expansions: Expansion[]) => void;
 }
+
+const PROMOS: { value: Expansion; label: string; hint: string }[] = [
+  { value: 'shire', label: 'La Comarca', hint: 'Juga gratis una carta boca amunt, encara que estigui tapada.' },
+  { value: 'grond', label: 'Grond', hint: 'Enderroca una fortalesa enemiga i posa-hi la teva.' },
+];
 
 const SIDES: { value: SeatChoice; label: string; hint: string }[] = [
   { value: 'fellowship', label: 'Comunitat de l\'Anell', hint: 'Destrueix l\'Anell i defensa les races lliures.' },
@@ -34,11 +40,18 @@ export function Lobby({ onEnterRoom, onLocal, onAi }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [aiLevel, setAiLevel] = useState<AiLevel>('normal');
   const [aiSide, setAiSide] = useState<SeatChoice>('fellowship');
+  const [expansions, setExpansions] = useState<Expansion[]>(loadExpansions);
+
+  const togglePromo = (e: Expansion) => {
+    const next = PROMOS.map((p) => p.value).filter((v) => (v === e) !== expansions.includes(v));
+    setExpansions(next);
+    saveExpansions(next);
+  };
 
   const startAi = (e: FormEvent) => {
     e.preventDefault();
     const side: Side = aiSide === 'random' ? (Math.random() < 0.5 ? 'fellowship' : 'sauron') : aiSide;
-    onAi(aiLevel, side);
+    onAi(aiLevel, side, expansions);
   };
 
   const create = async (e: FormEvent) => {
@@ -47,7 +60,7 @@ export function Lobby({ onEnterRoom, onLocal, onAi }: Props) {
     setError(null);
     saveName(name);
     try {
-      const result = await createRoom(side, name);
+      const result = await createRoom(side, name, expansions);
       onEnterRoom(result.code);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -74,26 +87,46 @@ export function Lobby({ onEnterRoom, onLocal, onAi }: Props) {
       </header>
 
       <div className="lobby-grid">
-        <form className="lobby-card" onSubmit={create}>
-          <h2>Crea una sala</h2>
-          <label className="field">
-            <span>El teu nom</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} maxLength={24} placeholder="Com et diuen?" />
-          </label>
-          <fieldset className="side-pick">
-            <legend>Amb quin bàndol jugues?</legend>
-            {SIDES.map((s) => (
-              <label key={s.value} className={`side-option side-option-${s.value}${side === s.value ? ' checked' : ''}`}>
-                <input type="radio" name="side" value={s.value} checked={side === s.value} onChange={() => setSide(s.value)} />
-                <b>{s.label}</b>
-                <span>{s.hint}</span>
-              </label>
-            ))}
-          </fieldset>
-          <button type="submit" className="lobby-primary" disabled={busy}>
-            {busy ? 'Creant la sala…' : 'Crea la sala i convida un amic'}
-          </button>
-        </form>
+        <div className="lobby-side">
+          <form className="lobby-card" onSubmit={create}>
+            <h2>Crea una sala</h2>
+            <label className="field">
+              <span>El teu nom</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} maxLength={24} placeholder="Com et diuen?" />
+            </label>
+            <fieldset className="side-pick">
+              <legend>Amb quin bàndol jugues?</legend>
+              {SIDES.map((s) => (
+                <label key={s.value} className={`side-option side-option-${s.value}${side === s.value ? ' checked' : ''}`}>
+                  <input type="radio" name="side" value={s.value} checked={side === s.value} onChange={() => setSide(s.value)} />
+                  <b>{s.label}</b>
+                  <span>{s.hint}</span>
+                </label>
+              ))}
+            </fieldset>
+            <button type="submit" className="lobby-primary" disabled={busy}>
+              {busy ? 'Creant la sala…' : 'Crea la sala i convida un amic'}
+            </button>
+          </form>
+
+          <section className="lobby-card promo-pick" aria-label="Expansió">
+            <h2>Expansió</h2>
+            <p>Fitxes de Lloc clau opcionals: es barregen amb la resta després de girar les 3 primeres. Valen per a les partides noves que creïs (sala, IA o local).</p>
+            <div className="promo-row">
+              {PROMOS.map((p) => {
+                const on = expansions.includes(p.value);
+                return (
+                  <label key={p.value} className={`promo-option${on ? ' checked' : ''}`}>
+                    <input type="checkbox" checked={on} onChange={() => togglePromo(p.value)} />
+                    <LocationBanner id={p.value} size={26} />
+                    <span><b>{p.label}</b><small>{p.hint}</small></span>
+                    <span className="promo-switch" aria-hidden="true">{on ? 'Sí' : 'No'}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+        </div>
 
         <div className="lobby-side">
           <form className="lobby-card" onSubmit={join}>
@@ -144,10 +177,11 @@ export function Lobby({ onEnterRoom, onLocal, onAi }: Props) {
           <div className="lobby-card lobby-local">
             <h2>Al mateix ordinador</h2>
             <p>Dos jugadors, una pantalla. Sense connexió.</p>
-            <button type="button" onClick={onLocal}>Juga en local</button>
+            <button type="button" onClick={() => onLocal(expansions)}>Juga en local</button>
           </div>
         </div>
       </div>
+
       {error && <p className="lobby-error" role="alert">{error}</p>}
     </div>
   );

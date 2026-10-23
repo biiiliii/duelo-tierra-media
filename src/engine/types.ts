@@ -31,12 +31,20 @@ export type LocationEffect =
   | { type: 'ring'; n: number }
   | { type: 'move'; n: number }
   | { type: 'coins'; n: number }
-  | { type: 'alliance_any_race' };
+  | { type: 'alliance_any_race' }
+  /** La Comarca: play any face-up card of the formation for free, covered or not. */
+  | { type: 'play_visible' }
+  /** Grond: an enemy fortress becomes yours (its units flee to one adjacent region) and 1 unit joins it. */
+  | { type: 'grond' };
+
+/** Optional promo tiles, shuffled into the key location stack when chosen. */
+export type Expansion = 'shire' | 'grond';
 
 export interface LocationDef {
   id: string;
   name: string;
-  region: RegionId;
+  /** Where its fortress goes; null for the promo tiles, which place none (or choose where). */
+  region: RegionId | null;
   cost: { coins: number; skills: Skill[] };
   effects: LocationEffect[];
 }
@@ -95,6 +103,9 @@ export type Step = { join?: boolean } & (
   | { k: 'allianceAnyRace' }
   | { k: 'playFromDiscard' }
   | { k: 'discardOppGrey' }
+  | { k: 'playVisible' }
+  | { k: 'grondRaze' }
+  | { k: 'grondRetreat'; region: RegionId }
   | { k: 'wizardUnits' }
   | { k: 'wizardFirst' }
   | { k: 'wizardSecond'; exclude: RegionId }
@@ -129,6 +140,8 @@ export interface GameState {
   discard: string[];
   locationDeck: string[];
   locationsFaceUp: string[];
+  /** Promo tiles in play (missing in games saved before they existed). */
+  expansions?: Expansion[];
   alliancePiles: Record<Race, string[]>;
   current: Side;
   extraTurns: number;

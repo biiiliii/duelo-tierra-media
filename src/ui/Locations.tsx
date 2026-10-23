@@ -1,9 +1,9 @@
 import { LOCATIONS } from '../engine/data';
 import { locationCost, skillCoverage, skillPool } from '../engine/costs';
 import { REGION_NAMES } from '../engine/labels';
-import type { GameState, Side, LocationEffect } from '../engine/types';
-import { Coin, Glyph, Piece, RegionBanner, SkillMedal } from './Icon';
-import { REGION_COLOR } from './icons';
+import type { Expansion, GameState, LocationDef, LocationEffect, Side } from '../engine/types';
+import { Coin, Glyph, LocationBanner, Piece, SkillMedal } from './Icon';
+import { PROMO_BANNER, REGION_COLOR } from './icons';
 
 export function effectText(e: LocationEffect): string {
   switch (e.type) {
@@ -14,7 +14,19 @@ export function effectText(e: LocationEffect): string {
     case 'move': return `${e.n} moviment${e.n > 1 ? 's' : ''}`;
     case 'coins': return `+${e.n} monedes`;
     case 'alliance_any_race': return 'Fitxa d\'aliança de la raça que vulguis';
+    case 'play_visible': return 'Juga gratis 1 carta boca amunt de la formació, encara que estigui tapada';
+    case 'grond': return 'Enderroca 1 fortalesa enemiga (les seves unitats fugen a 1 regió adjacent) i posa-hi 1 fortalesa i 1 unitat teves';
   }
+}
+
+/** Where the location's fortress goes. */
+export function fortressText(loc: LocationDef): string {
+  if (loc.region) return `Fortalesa a ${REGION_NAMES[loc.region]}`;
+  return loc.id === 'grond' ? 'Fortalesa on n\'enderroquis una' : 'Sense fortalesa';
+}
+
+export function bannerColor(loc: LocationDef): string {
+  return loc.region ? REGION_COLOR[loc.region] : PROMO_BANNER[loc.id as Expansion].color;
 }
 
 interface Props {
@@ -41,13 +53,13 @@ export function Locations({ state, disabled, onTake, viewer }: Props) {
           const extra = quote.coins > 0;
           const have = skillCoverage(loc.cost.skills, pool);
           return (
-            <article key={id} className="location" data-fx={`loc-${id}`} style={{ ['--banner' as string]: REGION_COLOR[loc.region], ['--cost-n' as string]: loc.cost.skills.length }}>
+            <article key={id} className="location" data-fx={`loc-${id}`} style={{ ['--banner' as string]: bannerColor(loc), ['--cost-n' as string]: loc.cost.skills.length }}>
               <header className="location-head">
-                <RegionBanner region={loc.region} size={22} />
+                <LocationBanner id={id} size={22} />
                 <div>
                   <h3>{loc.name}</h3>
                   <span className="location-region">
-                    <Piece side={state.current} kind="fortress" size={12} /> Fortalesa a {REGION_NAMES[loc.region]}
+                    <Piece side={state.current} kind="fortress" size={12} /> {fortressText(loc)}
                   </span>
                 </div>
               </header>

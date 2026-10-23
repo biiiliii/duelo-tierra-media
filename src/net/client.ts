@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Action, Side } from '../engine/types.js';
+import { EXPANSIONS } from '../engine/data.js';
+import type { Action, Expansion, Side } from '../engine/types.js';
 import type { JoinResult, PollResult, RoomRequest, RoomView, SeatChoice } from './protocol.js';
 
 export class ApiError extends Error {
@@ -60,8 +61,26 @@ export function saveName(name: string): void {
   }
 }
 
-export async function createRoom(side: SeatChoice, name: string): Promise<JoinResult> {
-  const result = await post<JoinResult>({ op: 'create', side, name });
+/** The promo tiles last chosen in the lobby. */
+export function loadExpansions(): Expansion[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem('duelo:expansions') ?? '[]');
+    return EXPANSIONS.filter((e) => Array.isArray(saved) && saved.includes(e));
+  } catch {
+    return [];
+  }
+}
+
+export function saveExpansions(expansions: Expansion[]): void {
+  try {
+    localStorage.setItem('duelo:expansions', JSON.stringify(expansions));
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function createRoom(side: SeatChoice, name: string, expansions: Expansion[] = []): Promise<JoinResult> {
+  const result = await post<JoinResult>({ op: 'create', side, name, expansions });
   saveSeat(result.code, { token: result.token, side: result.side });
   return result;
 }

@@ -1,0 +1,20 @@
+{
+  "source": "Promo tiles (7dume-goodies rules PDFs) + photos of both tiles",
+  "note": "Optional. During setup, after the 3 face-up key locations are revealed, these are shuffled into the rest of the stack. Like every key location they also cost +1 coin per fortress you already have on the board.",
+  "locations": [
+    {
+      "id": "shire",
+      "name": "La Comarca",
+      "region": null,
+      "cost": { "coins": 0, "skills": ["mask", "fist", "heart", "heart", "book", "book"] },
+      "effects": [{ "type": "play_visible" }]
+    },
+    {
+      "id": "grond",
+      "name": "Grond",
+      "region": null,
+      "cost": { "coins": 0, "skills": ["mask", "mask", "fist", "fist", "heart", "crown"] },
+      "effects": [{ "type": "grond" }]
+    }
+  ]
+}

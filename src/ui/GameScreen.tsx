@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { LOCATIONS } from '../engine/data';
 import { SIDE_NAMES } from '../engine/labels';
 import type { Action, GameState, RegionId, Side } from '../engine/types';
 import { ActionBar } from './ActionBar';
@@ -95,7 +96,10 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
     <div className={`app turn-${state.current}`}>
       <header className="topbar">
         <h1>Duelo por la Tierra Media</h1>
-        <p className="topbar-status">Capítol {state.chapter} de 3, torn {state.turn}</p>
+        <p className="topbar-status">
+          Capítol {state.chapter} de 3, torn {state.turn}
+          {state.expansions?.length ? `, amb ${state.expansions.map((e) => LOCATIONS[e].name).join(' i ')}` : ''}
+        </p>
         <div className="topbar-actions">
           {topbar}
           <button type="button" onClick={() => fx.setSpeed(NEXT_SPEED[fx.speed])} title="Canvia la velocitat de les animacions">

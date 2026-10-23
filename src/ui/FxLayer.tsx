@@ -1,11 +1,12 @@
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { CARDS, LOCATIONS, TOKENS } from '../engine/data';
-import { RACE_NAMES, REGION_NAMES, SIDE_TITLES, TOKEN_TEXT } from '../engine/labels';
+import { RACE_NAMES, SIDE_TITLES, TOKEN_TEXT } from '../engine/labels';
 import type { Side } from '../engine/types';
 import { CardBack, CardFace } from './CardView';
 import type { FxApi } from './FxContext';
 import type { Effect, Rect } from './fxDirector';
-import { Piece, RaceIcon, RegionBanner } from './Icon';
+import { LocationBanner, Piece, RaceIcon } from './Icon';
+import { fortressText } from './Locations';
 import { SIDE_GLYPH } from './icons';
 
 const ROMAN = ['I', 'II', 'III'];
@@ -149,9 +150,9 @@ function Showcase({ effect, chapter, style }: { effect: Effect; chapter: number;
     const loc = LOCATIONS[e.id];
     face = (
       <div className="vfx-place">
-        <RegionBanner region={loc.region} size={30} />
+        <LocationBanner id={e.id} size={30} />
         <b>{loc.name}</b>
-        <span><Piece side={e.by} kind="fortress" size={16} /> Fortalesa a {REGION_NAMES[loc.region]}</span>
+        <span><Piece side={e.by} kind="fortress" size={16} /> {fortressText(loc)}</span>
       </div>
     );
   } else if (e.t === 'token') {

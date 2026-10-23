@@ -1,7 +1,8 @@
 import type { IconType } from 'react-icons';
+import { LOCATIONS } from '../engine/data';
 import { CHAIN_NAMES, RACE_NAMES, REGION_NAMES, SKILL_NAMES } from '../engine/labels';
-import type { Race, RegionId, Side, Skill } from '../engine/types';
-import { CHAIN_GLYPH, GLYPH, RACE_GLYPH, REGION_COLOR, REGION_EMBLEM, REGION_GLYPH, SKILL_GLYPH } from './icons';
+import type { Expansion, Race, RegionId, Side, Skill } from '../engine/types';
+import { CHAIN_GLYPH, GLYPH, PROMO_BANNER, RACE_GLYPH, REGION_COLOR, REGION_EMBLEM, REGION_GLYPH, SKILL_GLYPH } from './icons';
 
 type Len = number | string;
 const len = (v: Len) => (typeof v === 'number' ? `${v}px` : v);
@@ -75,6 +76,18 @@ export function RegionBanner({ region, size = 22, label }: { region: RegionId; s
     >
       <Glyph aria-hidden="true" />
       {label && <span className="banner-label">{REGION_NAMES[region]}</span>}
+    </span>
+  );
+}
+
+/** A key location's banner: its region's, or the promo tile's own when it has no region. */
+export function LocationBanner({ id, size = 22 }: { id: string; size?: Len }) {
+  const loc = LOCATIONS[id];
+  if (loc.region) return <RegionBanner region={loc.region} size={size} />;
+  const promo = PROMO_BANNER[id as Expansion];
+  return (
+    <span className="banner" style={{ ['--banner' as string]: promo.color, ['--emblem' as string]: promo.emblem, ['--s' as string]: len(size) }} title={loc.name}>
+      <promo.glyph aria-hidden="true" />
     </span>
   );
 }

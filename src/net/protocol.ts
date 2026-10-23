@@ -1,4 +1,4 @@
-import type { Action, GameState, Side } from '../engine/types.js';
+import type { Action, Expansion, GameState, Side } from '../engine/types.js';
 
 export type SeatChoice = Side | 'random';
 
@@ -18,7 +18,7 @@ export interface RoomView {
 }
 
 export type RoomRequest =
-  | { op: 'create'; side: SeatChoice; name: string }
+  | { op: 'create'; side: SeatChoice; name: string; expansions?: Expansion[] }
   | { op: 'join'; code: string; name: string; token?: string }
   | { op: 'action'; code: string; token: string; version: number; action: Action }
   | { op: 'rematch'; code: string; token: string };

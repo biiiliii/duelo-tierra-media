@@ -2,12 +2,13 @@ import chapter1 from '../../data/chapter1_cards.json' with { type: 'json' };
 import chapter2 from '../../data/chapter2_cards.json' with { type: 'json' };
 import chapter3 from '../../data/chapter3_cards.json' with { type: 'json' };
 import locationsJson from '../../data/key_locations.json' with { type: 'json' };
+import expansionJson from '../../data/expansion_locations.json' with { type: 'json' };
 import tokensJson from '../../data/alliance_tokens.json' with { type: 'json' };
 import mapJson from '../../data/map.json' with { type: 'json' };
 import ringJson from '../../data/ring_track.json' with { type: 'json' };
 import formationsJson from '../../data/formations.json' with { type: 'json' };
 import type {
-  CardDef, Chapter, LocationDef, Race, RegionId, Side, Skill, SpecialIcon, TokenDef,
+  CardDef, Chapter, Expansion, LocationDef, Race, RegionId, Side, Skill, SpecialIcon, TokenDef,
 } from './types.js';
 
 interface RawCard {
@@ -70,8 +71,11 @@ for (const ch of [1, 2, 3] as Chapter[]) {
   }
 }
 
+/** The base game's key locations; the promo tiles join the stack only when chosen. */
+export const BASE_LOCATIONS: string[] = locationsJson.locations.map((l) => l.id);
+export const EXPANSIONS: Expansion[] = expansionJson.locations.map((l) => l.id as Expansion);
 export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries(
-  (locationsJson.locations as LocationDef[]).map((l) => [l.id, l]),
+  ([...locationsJson.locations, ...expansionJson.locations] as LocationDef[]).map((l) => [l.id, l]),
 );
 
 export const TOKENS: Record<string, TokenDef> = Object.fromEntries(
