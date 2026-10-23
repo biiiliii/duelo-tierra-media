@@ -1,4 +1,5 @@
 import { applyFx } from '../engine/fx';
+import { HIDDEN } from '../engine/view';
 import type { Fx, GameState, RegionId, Side } from '../engine/types';
 
 export type Speed = 'normal' | 'fast' | 'off';
@@ -220,8 +221,13 @@ export class FxDirector {
     }
     if (e.t === 'reveal') {
       // Online the hidden card is redacted in the old state: take it from the final one (same chapter only).
+      // If the rival took it in an extra turn it is redacted there too, and only a later play of it names it.
       const slot = batch.final.slots[e.slot];
-      if (batch.final.chapter === display.chapter && slot) display.slots[e.slot] = { ...slot, taken: false, faceUp: true };
+      const later = batch.events.slice(i + 1).find((x) => x.t === 'card' && x.slot === e.slot);
+      const cardId = slot?.cardId !== HIDDEN ? slot?.cardId : later?.t === 'card' ? later.cardId : undefined;
+      if (batch.final.chapter === display.chapter && slot && cardId) {
+        display.slots[e.slot] = { ...slot, cardId, taken: false, faceUp: true };
+      }
     } else {
       applyFx(display, e);
     }
