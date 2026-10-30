@@ -1,5 +1,5 @@
 import modelJson from '../../data/ai_model.json' with { type: 'json' };
-import { RACES, RING_LENGTH, otherSide } from './data.js';
+import { RACES, RING_LENGTH, SIDE_ALLIES, otherSide } from './data.js';
 import { chainSymbols, skillPool } from './costs.js';
 import { COMBO_TOKENS, predict, sample, type LearnedModel } from './features.js';
 import { applyAction, legalActions, presence, raceSymbols } from './engine.js';
@@ -148,6 +148,9 @@ function score(state: GameState, side: Side, w: Weights): number {
   v += eco * economy;
 
   v += p.tokens.length * w.token;
+  // Allies: Power tokens call Allies (an unused one is worth about half an alliance); a blocked quest loses steps.
+  v += (p.power ?? 0) * w.token * 0.5 + (p.allyHand?.length ?? 0) * w.token * 0.3;
+  v -= (p.ringBlock ?? 0) * (w.ring + (p.ring > 9 ? w.ringLate : 0));
   v += p.tokens.filter((t) => COMBO_TOKENS.includes(t)).length * w.combo;
   return v;
 }
@@ -212,6 +215,14 @@ export function determinize(state: GameState, rand: Rand): GameState {
   if (!discardKnown) s.discard = pool.slice(hidden.length);
   shuffleInPlace(s.locationDeck, rand);
   for (const race of RACES) shuffleInPlace(s.alliancePiles[race], rand);
+  // The rival's hidden Allies: any of its cards not yet revealed or retired.
+  const rival = s.players[otherSide(s.current)];
+  if (rival.allyHand?.length) {
+    const seen = new Set([...(rival.allies ?? []), ...(rival.alliesGone ?? [])]);
+    const pool = SIDE_ALLIES[rival.side].filter((id) => !seen.has(id));
+    shuffleInPlace(pool, rand);
+    rival.allyHand = pool.slice(0, rival.allyHand.length);
+  }
   return s;
 }
 

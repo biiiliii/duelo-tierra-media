@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { LOCATIONS } from '../engine/data';
-import { SIDE_NAMES } from '../engine/labels';
+import { otherSide } from '../engine/data';
+import { EXPANSION_NAMES, SIDE_NAMES } from '../engine/labels';
 import type { Action, GameState, RegionId, Side } from '../engine/types';
 import { ActionBar } from './ActionBar';
+import { AlliesZone } from './AlliesZone';
 import { Formation } from './Formation';
 import { FxLayer } from './FxLayer';
 import { FxProvider, useFxDirector } from './FxContext';
@@ -98,7 +99,7 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
         <h1>Duelo por la Tierra Media</h1>
         <p className="topbar-status">
           Capítol {state.chapter} de 3, torn {state.turn}
-          {state.expansions?.length ? `, amb ${state.expansions.map((e) => LOCATIONS[e].name).join(' i ')}` : ''}
+          {state.expansions?.length ? `, amb ${state.expansions.map((e) => EXPANSION_NAMES[e]).join(' i ')}` : ''}
         </p>
         <div className="topbar-actions">
           {topbar}
@@ -132,6 +133,13 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
           <div className="table">
             <Formation state={state} selected={selected} onSelect={setSelected} disabled={busy} viewer={you ?? state.current} />
           </div>
+          <AlliesZone
+            state={state}
+            order={you ? [otherSide(you), you] : panelOrder}
+            // Hot-seat shows the hand of the player to move; online only your own.
+            showHand={(side) => (you ? side === you : side === state.current)}
+            onAlly={canAct && !busy ? (value) => onAction({ type: 'ally', value }) : undefined}
+          />
         </section>
 
         <aside className="col-players">

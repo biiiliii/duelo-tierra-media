@@ -16,7 +16,7 @@ type Route =
 // Catalan URL values: ?ia=normal&bandol=comunitat
 const LEVEL_PARAM: Record<AiLevel, string> = { easy: 'facil', normal: 'normal', hard: 'dificil', impossible: 'impossible', apocalypse: 'apocalipsi' };
 const SIDE_PARAM: Record<Side, string> = { fellowship: 'comunitat', sauron: 'sauron' };
-const EXPANSION_PARAM: Record<Expansion, string> = { shire: 'comarca', grond: 'grond' };
+const EXPANSION_PARAM: Record<Expansion, string> = { shire: 'comarca', grond: 'grond', allies: 'aliats' };
 const fromParam = <K extends string>(map: Record<K, string>, value: string | null) =>
   (Object.keys(map) as K[]).find((k) => map[k] === value);
 
@@ -24,7 +24,7 @@ function readRoute(): Route {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('sala');
   if (code) return { kind: 'room', code: code.toUpperCase() };
-  // ?amb=comarca,grond: the promo tiles to play with.
+  // ?amb=comarca,grond,aliats: the promo tiles (and the Allies expansion) to play with.
   const expansions = (params.get('amb') ?? '').split(',').flatMap((v) => fromParam(EXPANSION_PARAM, v) ?? []);
   if (params.has('local')) return { kind: 'local', expansions };
   if (params.has('ia')) {

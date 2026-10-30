@@ -2,6 +2,7 @@ import { isAccessible } from '../engine/engine';
 import { cardLabel } from '../engine/labels';
 import type { GameState, Side } from '../engine/types';
 import { CardBack, CardFace, costHave } from './CardView';
+import { Glyph } from './Icon';
 import { useEffects } from './FxContext';
 
 const CARD_W = 76;
@@ -36,8 +37,15 @@ export function Formation({ state, selected, onSelect, disabled, viewer }: Props
             ? <CardFace cardId={slot.cardId} have={costHave(state, viewer, slot.cardId)} />
             : <CardBack chapter={state.chapter} />;
           const flip = revealed.has(slot.id) ? ' vfx-reveal' : '';
+          const forced = state.forced?.cardId === slot.cardId;
+          const extras = (
+            <>
+              {slot.power && <span className="slot-power" title="Fitxa de Poder: la guanya qui reveli la carta"><Glyph name="power" size={20} /></span>}
+              {forced && <span className="slot-forced" title="El rival l'ha de prendre">!</span>}
+            </>
+          );
           if (!accessible) {
-            return <div key={slot.id} className={`slot slot-covered${flip}`} style={style} data-fx={`slot-${slot.id}`}>{face}</div>;
+            return <div key={slot.id} className={`slot slot-covered${flip}`} style={style} data-fx={`slot-${slot.id}`}>{face}{extras}</div>;
           }
           return (
             <button
@@ -51,7 +59,7 @@ export function Formation({ state, selected, onSelect, disabled, viewer }: Props
               aria-label={slot.faceUp ? cardLabel(slot.cardId) : 'Carta boca avall'}
               aria-pressed={selected === slot.id}
             >
-              {face}
+              {face}{extras}
             </button>
           );
         })}

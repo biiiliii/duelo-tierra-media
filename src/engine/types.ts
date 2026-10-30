@@ -37,8 +37,17 @@ export type LocationEffect =
   /** Grond: an enemy fortress becomes yours (its units flee to one adjacent region) and 1 unit joins it. */
   | { type: 'grond' };
 
-/** Optional promo tiles, shuffled into the key location stack when chosen. */
-export type Expansion = 'shire' | 'grond';
+/** Optional promo tiles (shuffled into the key location stack when chosen) and the Allies expansion. */
+export type Expansion = 'shire' | 'grond' | 'allies';
+
+/** An Ally card (Allies expansion): an arrival effect for 1 Power token, then a retreat effect for 2. */
+export interface AllyDef {
+  id: string;
+  side: Side;
+  name: string;
+  arrive: string;
+  retreat: string;
+}
 
 export interface LocationDef {
   id: string;
@@ -67,6 +76,13 @@ export interface PlayerState {
   fortressSupply: number;
   pairsTaken: Race[];
   usedThreeDifferent: boolean;
+  /** Allies expansion (missing in games without it): Power tokens, hidden and revealed Ally cards. */
+  power?: number;
+  allyHand?: string[];
+  allies?: string[];
+  alliesGone?: string[];
+  /** Power tokens on the Nazgûl: each one takes a step of this player's quest before it can advance. */
+  ringBlock?: number;
 }
 
 export interface Slot {
@@ -76,6 +92,8 @@ export interface Slot {
   x: number;
   faceUp: boolean;
   taken: boolean;
+  /** Allies expansion: a Power token lies on the card, for whoever reveals it. */
+  power?: boolean;
 }
 
 export interface RegionState {
@@ -110,7 +128,40 @@ export type Step = { join?: boolean } & (
   | { k: 'wizardFirst' }
   | { k: 'wizardSecond'; exclude: RegionId }
   | { k: 'entsTriple'; n: number }
+  // Allies expansion
+  | { k: 'allyOffer' }
+  | { k: 'ringBlock'; n: number }
+  | { k: 'allyAlliance'; races: Race[] }
+  | { k: 'discardRandom' }
+  | { k: 'removeAllEnemy' }
+  | { k: 'discardFormation' }
+  | { k: 'revealAccessible' }
+  | { k: 'ringOrUnit' }
+  | { k: 'lockRace' }
+  | { k: 'discardOppToken' }
+  | { k: 'lockLocation' }
+  | { k: 'freeLocation' }
+  | { k: 'blockRoad'; kill: boolean }
+  | { k: 'revealOppAlly' }
+  | { k: 'copyOppRetreat' }
+  | { k: 'stealOppGrey' }
+  | { k: 'forceCard'; discardOnly: boolean }
 );
+
+/** What the Allies' Power tokens have locked, each against one side (the rival of whoever placed it). */
+export interface AllyLocks {
+  races: { side: Side; race: Race }[];
+  locations: { side: Side; id: string }[];
+  /** Index into CONNECTIONS. */
+  roads: { side: Side; road: number }[];
+}
+
+/** A card the rival must take on its next turn (play or discard it, or only discard it). */
+export interface Forced {
+  side: Side;
+  cardId: string;
+  discardOnly: boolean;
+}
 
 export interface PromptOption {
   value: string;
@@ -143,6 +194,13 @@ export interface GameState {
   /** Promo tiles in play (missing in games saved before they existed). */
   expansions?: Expansion[];
   alliancePiles: Record<Race, string[]>;
+  /** Allies expansion only. */
+  locks?: AllyLocks;
+  forced?: Forced | null;
+  /** An Ally was already called this turn (or the player declined to). */
+  allyUsed?: boolean;
+  /** An Ally was called before the turn's card or key location, which is still to come. */
+  awaitMain?: boolean;
   current: Side;
   extraTurns: number;
   queue: Step[];
@@ -190,4 +248,6 @@ export type Fx = FxBody & { by: Side; at: number };
 export type Action =
   | { type: 'takeCard'; slot: number; mode: 'play' | 'discard' }
   | { type: 'takeLocation'; id: string }
-  | { type: 'choose'; value: string };
+  | { type: 'choose'; value: string }
+  /** Allies expansion: call an Ally before the turn's main action ('arrive:<id>' or 'retreat:<id>'). */
+  | { type: 'ally'; value: string };

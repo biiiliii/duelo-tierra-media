@@ -1,4 +1,6 @@
 import { cardCost } from '../engine/costs';
+import { activeForced } from '../engine/engine';
+import { cardLabel } from '../engine/labels';
 import { SIDE_TITLES } from '../engine/labels';
 import type { GameState, Side } from '../engine/types';
 import { CardFace, costHave } from './CardView';
@@ -69,6 +71,9 @@ export function ActionBar({ state, selected, onPlay, onDiscard, onChoose, waitin
     );
   }
 
+  const forced = activeForced(state);
+  const forcedMsg = forced && `Sauron t'imposa ${cardLabel(forced.slot.cardId)}: aquest torn l'has de ${forced.discardOnly ? 'descartar' : 'prendre (jugar-la o descartar-la)'}.`;
+
   // Same layout as with a card selected (an empty card outline in its place), so the bar keeps its height.
   if (selected === null) {
     return (
@@ -76,7 +81,7 @@ export function ActionBar({ state, selected, onPlay, onDiscard, onChoose, waitin
         <div className="card-placeholder" aria-hidden="true">Tria una carta</div>
         <div className="action-card-body">
           <Who side={side} />
-          <p className="action-msg">Tria una carta accessible de la formació o construeix un lloc clau.</p>
+          <p className="action-msg">{forcedMsg ?? 'Tria una carta accessible de la formació o construeix un lloc clau.'}</p>
         </div>
       </div>
     );
@@ -86,20 +91,23 @@ export function ActionBar({ state, selected, onPlay, onDiscard, onChoose, waitin
   const quote = cardCost(state, side, slot.cardId);
   const discardCoins = state.chapter * (state.players[side].tokens.includes('men_discard_double') ? 2 : 1);
   const missing = quote.coins - state.players[side].coins;
+  const wrongCard = forced !== null && forced.slot.id !== selected;
+  const canPlay = quote.affordable && !wrongCard && !forced?.discardOnly;
   return (
     <div className={`action-bar action-card side-${side}`} role="status">
       <CardFace cardId={slot.cardId} size="lg" have={costHave(state, side, slot.cardId)} />
       <div className="action-card-body">
         <Who side={side} />
         <div className="action-buttons">
-          <button type="button" className="primary" disabled={!quote.affordable} onClick={onPlay}>
+          {forcedMsg && <p className="action-msg">{forcedMsg}</p>}
+          <button type="button" className="primary" disabled={!canPlay} onClick={onPlay}>
             {quote.viaChain
               ? 'Juga-la gratis per cadena'
               : quote.affordable
                 ? quote.coins === 0 ? 'Juga-la gratis' : <>Juga-la per <Coin n={quote.coins} size={23} /></>
                 : <>Et falten <Coin n={missing} size={23} /> per jugar-la</>}
           </button>
-          <button type="button" onClick={onDiscard}>
+          <button type="button" disabled={wrongCard} onClick={onDiscard}>
             Descarta-la i guanya <Coin n={discardCoins} size={23} />
           </button>
         </div>

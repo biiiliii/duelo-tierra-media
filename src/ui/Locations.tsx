@@ -1,6 +1,6 @@
 import { LOCATIONS } from '../engine/data';
 import { locationCost, skillCoverage, skillPool } from '../engine/costs';
-import { REGION_NAMES } from '../engine/labels';
+import { REGION_NAMES, SIDE_NAMES } from '../engine/labels';
 import type { Expansion, GameState, LocationDef, LocationEffect, Side } from '../engine/types';
 import { Coin, Glyph, LocationBanner, Piece, SkillMedal } from './Icon';
 import { PROMO_BANNER, REGION_COLOR } from './icons';
@@ -52,6 +52,8 @@ export function Locations({ state, disabled, onTake, viewer }: Props) {
           const quote = locationCost(state, viewer ?? state.current, id);
           const extra = quote.coins > 0;
           const have = skillCoverage(loc.cost.skills, pool);
+          const lockedFor = (state.locks?.locations ?? []).find((l) => l.id === id)?.side;
+          const locked = lockedFor === (viewer ?? state.current);
           return (
             <article key={id} className="location" data-fx={`loc-${id}`} style={{ ['--banner' as string]: bannerColor(loc), ['--cost-n' as string]: loc.cost.skills.length }}>
               <header className="location-head">
@@ -67,10 +69,11 @@ export function Locations({ state, disabled, onTake, viewer }: Props) {
                 {loc.cost.skills.map((s, i) => <SkillMedal key={i} skill={s} size={20} have={have[i]} />)}
               </div>
               <ul>{loc.effects.map((e, i) => <li key={i}>{effectText(e)}</li>)}</ul>
+              {lockedFor && <p className="location-locked"><Glyph name="power" size={14} /> Bloquejat per a {SIDE_NAMES[lockedFor]}</p>}
               <button
                 type="button"
                 className={quote.affordable ? 'primary' : undefined}
-                disabled={disabled || !quote.affordable}
+                disabled={disabled || !quote.affordable || locked}
                 onClick={() => onTake(id)}
               >
                 <Glyph name="fortress" size={15} />

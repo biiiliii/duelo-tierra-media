@@ -1,9 +1,11 @@
 import {
-  ADJACENT, BASE_LOCATIONS, CARDS, CHAPTER_CARDS, EXPANSIONS, FORMATIONS, LOCATIONS, MAP_SETUP, PIECES, RACES, REGION_IDS,
-  RING_BONUSES, RING_LENGTH, TOKENS, otherSide,
+  ADJACENT, ALLIES, BASE_LOCATIONS, CARDS, CHAPTER_CARDS, CONNECTIONS, EXPANSIONS, FORMATIONS, LOCATIONS, MAP_SETUP, PIECES,
+  POWER_SLOTS, RACES, REGION_IDS, RING_BONUSES, RING_LENGTH, SIDE_ALLIES, SIDES, TOKENS, otherSide,
 } from './data.js';
 import { cardCost, locationCost } from './costs.js';
-import { RACE_NAMES, REGION_NAMES, SIDE_NAMES, cardLabel, fromRegion, playedCardLabel, tokenLabel } from './labels.js';
+import {
+  EXPANSION_NAMES, RACE_NAMES, REGION_NAMES, SIDE_NAMES, cardLabel, fromRegion, playedCardLabel, roadLabel, tokenLabel,
+} from './labels.js';
 import type {
   Action, Chapter, Expansion, Fx, FxBody, GameState, PlayerState, Prompt, PromptOption, Race, RegionId, RegionState, Side,
   Slot, Step,
@@ -89,9 +91,21 @@ export function newGame(seed: number = Date.now(), expansions: Expansion[] = [])
     state.expansions = promos;
     state.locationDeck = shuffle(state, [...state.locationDeck, ...promos]);
   }
+  // Allies: each player draws 3 of its 7 Ally cards in secret and takes 1 Power token.
+  if (expansions.includes('allies')) {
+    state.expansions = [...(state.expansions ?? []), 'allies'];
+    state.locks = { races: [], locations: [], roads: [] };
+    state.forced = null;
+    for (const side of SIDES) {
+      Object.assign(state.players[side], {
+        power: 1, allyHand: shuffle(state, SIDE_ALLIES[side]).slice(0, 3), allies: [], alliesGone: [], ringBlock: 0,
+      });
+    }
+  }
   setupChapter(state, 1);
+  const extras = state.expansions ?? [];
   log(state, 'Comença la partida' +
-    (promos.length > 0 ? ` amb ${promos.map((e) => LOCATIONS[e].name).join(' i ')}` : '') + '. Sauron juga primer.');
+    (extras.length > 0 ? ` amb ${extras.map((e) => EXPANSION_NAMES[e]).join(' i ')}` : '') + '. Sauron juga primer.');
   emit(state, { t: 'turn', side: 'sauron', extra: false });
   return state;
 }
@@ -108,6 +122,13 @@ function setupChapter(state: GameState, chapter: Chapter): void {
     }
   });
   state.slots = slots;
+  if (hasAllies(state)) {
+    for (const [row, x] of POWER_SLOTS[chapter]) {
+      const slot = slots.find((s) => s.row === row && s.x === x);
+      if (slot) slot.power = true;
+    }
+    state.forced = null;
+  }
   while (state.locationsFaceUp.length < 3 && state.locationDeck.length > 0) {
     state.locationsFaceUp.push(state.locationDeck.shift()!);
   }
@@ -148,6 +169,53 @@ export function presence(state: GameState, side: Side): number {
     const r = state.regions[id];
     return r.fortress === side || r.units[side] > 0;
   }).length;
+}
+
+export function hasAllies(state: GameState): boolean {
+  return state.expansions?.includes('allies') ?? false;
+}
+
+export function raceLocked(state: GameState, side: Side, race: Race): boolean {
+  return state.locks?.races.some((l) => l.side === side && l.race === race) ?? false;
+}
+
+export function locationLocked(state: GameState, side: Side, id: string): boolean {
+  return state.locks?.locations.some((l) => l.side === side && l.id === id) ?? false;
+}
+
+export function roadBlocked(state: GameState, side: Side, a: RegionId, b: RegionId): boolean {
+  return state.locks?.roads.some((l) => {
+    const [x, y] = CONNECTIONS[l.road];
+    return l.side === side && ((x === a && y === b) || (x === b && y === a));
+  }) ?? false;
+}
+
+/** Where `side` may move a unit from `from` (Sauron's Allies can close roads). */
+function moveTargets(state: GameState, side: Side, from: RegionId): RegionId[] {
+  return ADJACENT[from].filter((to) => !roadBlocked(state, side, from, to));
+}
+
+/** The card the player to move must take this turn (Allies), while it can still be taken. */
+export function activeForced(state: GameState): { slot: Slot; discardOnly: boolean } | null {
+  const f = state.forced;
+  if (!f || f.side !== state.current) return null;
+  const slot = state.slots.find((s) => s.cardId === f.cardId);
+  if (!slot || !isAccessible(state, slot)) return null;
+  return { slot, discardOnly: f.discardOnly };
+}
+
+/** The Allies the player may call right now: 'arrive:<id>' for 1 Power token, 'retreat:<id>' for 2. */
+export function allyChoices(state: GameState, side: Side): PromptOption[] {
+  const p = state.players[side];
+  const power = p.power ?? 0;
+  const out: PromptOption[] = [];
+  if (power >= 1) {
+    for (const id of p.allyHand ?? []) out.push({ value: `arrive:${id}`, label: `${ALLIES[id].name} (arribada): ${ALLIES[id].arrive}` });
+  }
+  if (power >= 2) {
+    for (const id of p.allies ?? []) out.push({ value: `retreat:${id}`, label: `${ALLIES[id].name} (retirada): ${ALLIES[id].retreat}` });
+  }
+  return out;
 }
 
 function hasToken(state: GameState, side: Side, token: string): boolean {
@@ -329,7 +397,14 @@ function runStep(state: GameState, step: Step): void {
     case 'ring': {
       const from = me.ring;
       const bonuses: Step[] = [];
+      let blocked = 0;
       for (let i = 0; i < step.n && me.ring < RING_LENGTH; i++) {
+        // Allies: each Power token on the Nazgûl costs one step before the quest moves again.
+        if ((me.ringBlock ?? 0) > 0) {
+          me.ringBlock!--;
+          blocked++;
+          continue;
+        }
         me.ring++;
         const bonus = RING_BONUSES[me.ring];
         if (bonus === 'coin') bonuses.push({ k: 'coins', n: 1 });
@@ -337,7 +412,11 @@ function runStep(state: GameState, step: Step): void {
         else if (bonus === 'extra_turn') bonuses.push({ k: 'extraTurn' });
         else if (bonus === 'remove_fortress') bonuses.push({ k: 'removeEnemyFortress' });
       }
-      log(state, `${SIDE_NAMES[side]} avança a la Missió de l'Anell (${me.ring}/${RING_LENGTH}).`, step.join);
+      if (blocked > 0) {
+        log(state, `${SIDE_NAMES[side]} gasta ${blocked} pas${blocked > 1 ? 'sos' : ''} de l'Anell per treure fitxes de Poder del Nazgûl.`, step.join);
+        if (me.ring === from) return;
+      }
+      log(state, `${SIDE_NAMES[side]} avança a la Missió de l'Anell (${me.ring}/${RING_LENGTH}).`, step.join && blocked === 0);
       emit(state, { t: 'ring', side, from, to: me.ring });
       state.queue.unshift(...bonuses);
       return;
@@ -367,7 +446,7 @@ function runStep(state: GameState, step: Step): void {
       ask(state, step, `Tria on col·locar ${step.n} unitat${step.n > 1 ? 's' : ''}.`, 'region', regionOptions(step.regions));
       return;
     case 'move': {
-      const from = ownUnitRegions(state, side);
+      const from = ownUnitRegions(state, side).filter((r) => moveTargets(state, side, r).length > 0);
       if (step.n <= 0 || from.length === 0) return;
       ask(state, step, `Moviment (${step.n} restant${step.n > 1 ? 's' : ''}): tria una regió d'origen.`, 'region',
         [...regionOptions(from), { value: 'skip', label: 'Renunciar als moviments' }]);
@@ -375,7 +454,7 @@ function runStep(state: GameState, step: Step): void {
     }
     case 'moveTo':
       ask(state, step, `Mou 1 unitat ${fromRegion(step.from)}: tria la regió adjacent.`, 'region',
-        regionOptions(ADJACENT[step.from]));
+        regionOptions(moveTargets(state, side, step.from)));
       return;
     case 'removeEnemyUnit': {
       const regions = enemyUnitRegions(state, side);
@@ -407,6 +486,7 @@ function runStep(state: GameState, step: Step): void {
     case 'alliance': {
       const drawn: string[] = [];
       for (const race of step.races) {
+        if (raceLocked(state, side, race)) continue;
         const pile = state.alliancePiles[race];
         for (let i = 0; i < step.perRace && pile.length > 0; i++) drawn.push(pile.pop()!);
       }
@@ -416,7 +496,7 @@ function runStep(state: GameState, step: Step): void {
       return;
     }
     case 'allianceAnyRace': {
-      const races = RACES.filter((r) => state.alliancePiles[r].length > 0);
+      const races = RACES.filter((r) => state.alliancePiles[r].length > 0 && !raceLocked(state, side, r));
       if (races.length === 0) return;
       ask(state, step, 'Puertos Grises: tria la raça de la qual robaràs 2 fitxes.', 'choice',
         races.map((r) => ({ value: r, label: RACE_NAMES[r] })));
@@ -482,6 +562,330 @@ function runStep(state: GameState, step: Step): void {
       ask(state, step, `Ents: tria una acció (${step.n} restant${step.n > 1 ? 's' : ''}).`, 'choice', options);
       return;
     }
+    default:
+      runAllyStep(state, step);
+  }
+}
+
+// ---------- Allies expansion ----------
+
+/** Turns face up every face-down card left accessible; whoever reveals a Power token takes it. */
+function revealAccessible(state: GameState): void {
+  for (const slot of state.slots) {
+    if (!slot.faceUp && isAccessible(state, slot)) {
+      slot.faceUp = true;
+      emit(state, { t: 'reveal', slot: slot.id });
+      if (slot.power) {
+        slot.power = false;
+        const p = state.players[state.current];
+        p.power = (p.power ?? 0) + 1;
+        log(state, `${SIDE_NAMES[state.current]} revela una carta i guanya 1 fitxa de Poder.`);
+      }
+    }
+  }
+}
+
+/** A card leaves the formation (and stops being the card the rival must take). */
+function takeSlot(state: GameState, slot: Slot): void {
+  slot.taken = true;
+  if (state.forced?.cardId === slot.cardId) state.forced = null;
+}
+
+function allySteps(id: string, mode: 'arrive' | 'retreat'): Step[] {
+  const arrive = mode === 'arrive';
+  switch (id) {
+    case 'f_nazgul': return [{ k: 'ringBlock', n: arrive ? 1 : 2 }];
+    case 'f_coins': return arrive ? [{ k: 'coins', n: 3 }] : [{ k: 'coins', n: 5 }, { k: 'oppLoseCoin', n: 2 }];
+    case 'f_alliance': return [{ k: 'allyAlliance', races: arrive ? ['dwarves', 'men', 'elves', 'hobbits'] : ['wizards', 'ents'] }];
+    case 'f_discard': return [arrive ? { k: 'discardRandom' } : { k: 'playFromDiscard' }];
+    case 'f_kill': return [arrive ? { k: 'removeEnemyUnit' } : { k: 'removeAllEnemy' }];
+    case 'f_units': return arrive
+      ? [{ k: 'placeUnits', n: 1, regions: REGION_IDS }, { k: 'move', n: 1 }]
+      : [{ k: 'wizardUnits' }, { k: 'move', n: 2 }];
+    case 'f_formation': return arrive
+      ? [{ k: 'discardFormation' }]
+      : [{ k: 'discardFormation' }, { k: 'revealAccessible' }, { k: 'discardFormation' }];
+    case 's_ring': return arrive ? [{ k: 'ringOrUnit' }] : [{ k: 'ring', n: 1 }, { k: 'placeUnits', n: 1, regions: REGION_IDS }];
+    case 's_alliance': return [arrive ? { k: 'lockRace' } : { k: 'discardOppToken' }];
+    case 's_location': return [arrive ? { k: 'lockLocation' } : { k: 'freeLocation' }];
+    case 's_road': return [{ k: 'blockRoad', kill: !arrive }];
+    case 's_spy': return [arrive ? { k: 'revealOppAlly' } : { k: 'copyOppRetreat' }];
+    case 's_grey': return [arrive ? { k: 'discardOppGrey' } : { k: 'stealOppGrey' }];
+    case 's_force': return [{ k: 'forceCard', discardOnly: !arrive }];
+    default: return [];
+  }
+}
+
+/** Pays for an Ally ('arrive:<id>' or 'retreat:<id>') and queues its effect first. */
+function callAlly(state: GameState, value: string): void {
+  const side = state.current;
+  const p = state.players[side];
+  const [mode, id] = value.split(':') as ['arrive' | 'retreat', string];
+  const ally = ALLIES[id];
+  if (mode === 'arrive') {
+    p.power = (p.power ?? 0) - 1;
+    p.allyHand = (p.allyHand ?? []).filter((a) => a !== id);
+    p.allies = [...(p.allies ?? []), id];
+    log(state, `${SIDE_NAMES[side]} gasta 1 fitxa de Poder i crida ${ally.name}: ${ally.arrive}`);
+  } else {
+    p.power = (p.power ?? 0) - 2;
+    p.allies = (p.allies ?? []).filter((a) => a !== id);
+    p.alliesGone = [...(p.alliesGone ?? []), id];
+    log(state, `${SIDE_NAMES[side]} gasta 2 fitxes de Poder i retira ${ally.name}: ${ally.retreat}`);
+  }
+  state.allyUsed = true;
+  state.queue.unshift(...allySteps(id, mode));
+}
+
+/** After the turn's card or location: reveal the cards and offer the Ally the player has not called yet. */
+function offerAlly(state: GameState): boolean {
+  if (!hasAllies(state) || state.allyUsed) return false;
+  revealAccessible(state);
+  const options = allyChoices(state, state.current);
+  if (options.length === 0) return false;
+  ask(state, { k: 'allyOffer' }, 'Vols recórrer a un aliat abans d\'acabar el torn?', 'choice',
+    [...options, { value: 'end', label: 'No, acaba el torn' }]);
+  return true;
+}
+
+function hasMainAction(state: GameState): boolean {
+  return state.slots.some((s) => isAccessible(state, s)) ||
+    state.locationsFaceUp.some((id) => locationCost(state, state.current, id).affordable);
+}
+
+function accessibleFaceUp(state: GameState): Slot[] {
+  return state.slots.filter((s) => s.faceUp && isAccessible(state, s));
+}
+
+function runAllyStep(state: GameState, step: Step): void {
+  const side = state.current;
+  const opp = otherSide(side);
+  const me = state.players[side];
+  const them = state.players[opp];
+  switch (step.k) {
+    case 'ringBlock':
+      them.ringBlock = (them.ringBlock ?? 0) + step.n;
+      log(state, `${SIDE_NAMES[opp]} haurà de gastar ${step.n} pas${step.n > 1 ? 'sos' : ''} de l'Anell abans de tornar a avançar.`);
+      return;
+    case 'allyAlliance': {
+      const races = step.races.filter((r) => state.alliancePiles[r].length > 0 && !raceLocked(state, side, r));
+      if (races.length === 0) {
+        log(state, `No queda cap fitxa d'aliança disponible per a ${SIDE_NAMES[side]}.`);
+        return;
+      }
+      ask(state, step, 'Tria la raça de la qual prendràs la fitxa d\'aliança superior.', 'choice',
+        races.map((r) => ({ value: r, label: RACE_NAMES[r] })));
+      return;
+    }
+    case 'discardRandom': {
+      const chapters = [...new Set(state.discard.map((c) => CARDS[c].chapter))].sort();
+      if (chapters.length === 0) return;
+      if (chapters.length === 1) {
+        playRandomFromDiscard(state, chapters[0]);
+        return;
+      }
+      ask(state, step, 'Tria de quin capítol serà la carta a l\'atzar del descart (es veu pel revers).', 'choice',
+        chapters.map((ch) => ({
+          value: String(ch),
+          label: `Capítol ${ch} (${state.discard.filter((c) => CARDS[c].chapter === ch).length} cartes)`,
+        })));
+      return;
+    }
+    case 'removeAllEnemy': {
+      const regions = enemyUnitRegions(state, side);
+      if (regions.length === 0) return;
+      ask(state, step, 'Tria la regió d\'on retirar totes les unitats enemigues.', 'region', regionOptions(regions));
+      return;
+    }
+    case 'discardFormation': {
+      const slots = accessibleFaceUp(state);
+      if (slots.length === 0) return;
+      ask(state, step, 'Tria 1 carta accessible de la formació per descartar-la (sense monedes).', 'card',
+        slots.map((s) => ({ value: s.cardId, label: cardLabel(s.cardId) })));
+      return;
+    }
+    case 'revealAccessible':
+      revealAccessible(state);
+      return;
+    case 'ringOrUnit': {
+      const options: PromptOption[] = [{ value: 'ring', label: 'Avança 1 a la Missió de l\'Anell' }];
+      if (me.unitsSupply > 0) options.push({ value: 'unit', label: 'Posa 1 unitat a qualsevol regió' });
+      ask(state, step, 'Tria l\'efecte.', 'choice', options);
+      return;
+    }
+    case 'lockRace': {
+      const races = RACES.filter((r) => !raceLocked(state, opp, r));
+      if (races.length === 0) return;
+      ask(state, step, `Tria la pila de fitxes d'aliança que ${SIDE_NAMES[opp]} ja no podrà prendre.`, 'choice',
+        races.map((r) => ({ value: r, label: `${RACE_NAMES[r]} (${state.alliancePiles[r].length} fitxes)` })));
+      return;
+    }
+    case 'discardOppToken':
+      if (them.tokens.length === 0) {
+        log(state, `${SIDE_NAMES[opp]} no té cap fitxa d'aliança.`);
+        return;
+      }
+      ask(state, step, 'Tria la fitxa d\'aliança del rival que es descarta.', 'token',
+        them.tokens.map((t) => ({ value: t, label: tokenLabel(t) })));
+      return;
+    case 'lockLocation': {
+      const ids = state.locationsFaceUp.filter((id) => !locationLocked(state, opp, id));
+      if (ids.length === 0) return;
+      ask(state, step, `Tria el lloc clau que ${SIDE_NAMES[opp]} ja no podrà prendre.`, 'choice',
+        ids.map((id) => ({ value: id, label: LOCATIONS[id].name })));
+      return;
+    }
+    case 'freeLocation': {
+      const ids = state.locationsFaceUp.filter((id) => !locationLocked(state, side, id));
+      if (ids.length === 0) return;
+      ask(state, step, 'Tria el lloc clau que construeixes gratis.', 'choice',
+        ids.map((id) => ({ value: id, label: LOCATIONS[id].name })));
+      return;
+    }
+    case 'blockRoad': {
+      const roads = CONNECTIONS.map((_, i) => i).filter((i) => !state.locks!.roads.some((l) => l.side === opp && l.road === i));
+      if (roads.length === 0) return;
+      ask(state, step, `Tria el camí que ${SIDE_NAMES[opp]} ja no podrà seguir.`, 'choice',
+        roads.map((i) => ({ value: String(i), label: roadLabel(i) })));
+      return;
+    }
+    case 'revealOppAlly': {
+      const hand = them.allyHand ?? [];
+      if (hand.length === 0) {
+        log(state, `${SIDE_NAMES[opp]} no té cap aliat ocult.`);
+        return;
+      }
+      const id = hand[Math.floor(random(state) * hand.length)];
+      them.allyHand = hand.filter((a) => a !== id);
+      them.allies = [...(them.allies ?? []), id];
+      log(state, `${SIDE_NAMES[opp]} ha de revelar ${ALLIES[id].name}, sense efecte d'arribada.`);
+      return;
+    }
+    case 'copyOppRetreat': {
+      const allies = them.allies ?? [];
+      if (allies.length === 0) {
+        log(state, `${SIDE_NAMES[opp]} no té cap aliat revelat.`);
+        return;
+      }
+      ask(state, step, 'Tria l\'aliat del rival l\'efecte de retirada del qual aplicaràs al teu favor.', 'choice',
+        allies.map((id) => ({ value: id, label: `${ALLIES[id].name}: ${ALLIES[id].retreat}` })));
+      return;
+    }
+    case 'stealOppGrey': {
+      const greys = them.cards.filter((c) => CARDS[c].color === 'grey');
+      if (greys.length === 0) return;
+      ask(state, step, 'Tria la carta Grisa del rival que passa a la teva zona.', 'card',
+        greys.map((c) => ({ value: c, label: cardLabel(c) })));
+      return;
+    }
+    case 'forceCard': {
+      const slots = accessibleFaceUp(state);
+      if (slots.length === 0) return;
+      ask(state, step, step.discardOnly
+        ? `Tria la carta que ${SIDE_NAMES[opp]} haurà de descartar el seu proper torn.`
+        : `Tria la carta que ${SIDE_NAMES[opp]} haurà de prendre el seu proper torn.`, 'card',
+      slots.map((s) => ({ value: s.cardId, label: cardLabel(s.cardId) })));
+      return;
+    }
+  }
+}
+
+function playRandomFromDiscard(state: GameState, chapter: Chapter): void {
+  const pool = state.discard.filter((c) => CARDS[c].chapter === chapter);
+  const card = pool[Math.floor(random(state) * pool.length)];
+  state.discard.splice(state.discard.indexOf(card), 1);
+  playCardFree(state, state.current, card);
+}
+
+function resolveAllyChoice(state: GameState, prompt: Prompt, value: string): void {
+  const side = state.current;
+  const step = prompt.step;
+  const opp = otherSide(side);
+  const me = state.players[side];
+  const them = state.players[opp];
+  switch (step.k) {
+    case 'allyOffer':
+      if (value === 'end') state.allyUsed = true;
+      else callAlly(state, value);
+      return;
+    case 'allyAlliance': {
+      const race = value as Race;
+      const token = state.alliancePiles[race].pop()!;
+      me.tokens.push(token);
+      log(state, `${SIDE_NAMES[side]} s'alia amb els ${RACE_NAMES[race]}.`);
+      emit(state, { t: 'token', side, token });
+      state.queue.unshift(...tokenSteps(token));
+      return;
+    }
+    case 'discardRandom':
+      playRandomFromDiscard(state, Number(value) as Chapter);
+      return;
+    case 'removeAllEnemy': {
+      const r = value as RegionId;
+      const n = state.regions[r].units[opp];
+      state.regions[r].units[opp] = 0;
+      them.unitsSupply += n;
+      log(state, `${SIDE_NAMES[side]} retira ${n} unitat${n > 1 ? 's' : ''} enemiga${n > 1 ? 's' : ''} ${fromRegion(r, 'de')}.`);
+      for (let i = 0; i < n; i++) emit(state, { t: 'kill', side: opp, region: r });
+      return;
+    }
+    case 'discardFormation': {
+      const slot = state.slots.find((s) => s.cardId === value)!;
+      takeSlot(state, slot);
+      state.discard.push(value);
+      log(state, `${SIDE_NAMES[side]} descarta ${cardLabel(value)} de la formació.`);
+      emit(state, { t: 'card', slot: slot.id, mode: 'discard' });
+      return;
+    }
+    case 'ringOrUnit':
+      state.queue.unshift(value === 'ring' ? { k: 'ring', n: 1 } : { k: 'placeUnits', n: 1, regions: REGION_IDS });
+      return;
+    case 'lockRace':
+      state.locks!.races.push({ side: opp, race: value as Race });
+      log(state, `${SIDE_NAMES[side]} bloqueja la pila d'aliances dels ${RACE_NAMES[value as Race]} per a ${SIDE_NAMES[opp]}.`);
+      return;
+    case 'discardOppToken':
+      them.tokens.splice(them.tokens.indexOf(value), 1);
+      log(state, `${SIDE_NAMES[side]} fa descartar la fitxa d'aliança dels ${RACE_NAMES[TOKENS[value].race]} al rival.`);
+      return;
+    case 'lockLocation':
+      state.locks!.locations.push({ side: opp, id: value });
+      log(state, `${SIDE_NAMES[side]} bloqueja ${LOCATIONS[value].name} per a ${SIDE_NAMES[opp]}.`);
+      return;
+    case 'freeLocation':
+      state.queue.unshift(...buildLocation(state, side, value, 0));
+      return;
+    case 'blockRoad': {
+      const road = Number(value);
+      state.locks!.roads.push({ side: opp, road });
+      log(state, `${SIDE_NAMES[side]} talla el camí ${roadLabel(road)} per a ${SIDE_NAMES[opp]}.`);
+      if (step.kill) {
+        for (const r of CONNECTIONS[road]) {
+          if (state.regions[r].units[opp] === 0) continue;
+          state.regions[r].units[opp]--;
+          them.unitsSupply++;
+          log(state, `${SIDE_NAMES[side]} retira 1 unitat enemiga ${fromRegion(r, 'de')}.`);
+          emit(state, { t: 'kill', side: opp, region: r });
+        }
+      }
+      return;
+    }
+    case 'copyOppRetreat':
+      log(state, `${SIDE_NAMES[side]} aprofita la retirada de ${ALLIES[value].name}: ${ALLIES[value].retreat}`);
+      state.queue.unshift(...allySteps(value, 'retreat'));
+      return;
+    case 'stealOppGrey':
+      them.cards.splice(them.cards.indexOf(value), 1);
+      me.cards.push(value);
+      log(state, `${SIDE_NAMES[side]} pren ${cardLabel(value)} al rival.`);
+      emit(state, { t: 'burn', side: opp, cardId: value });
+      return;
+    case 'forceCard':
+      state.forced = { side: opp, cardId: value, discardOnly: step.discardOnly };
+      log(state, `${SIDE_NAMES[opp]} haurà de ${step.discardOnly ? 'descartar' : 'prendre'} ${cardLabel(value)} el seu proper torn.`);
+      return;
+    default:
+      throw new Error(`Step ${step.k} does not take choices`);
   }
 }
 
@@ -563,7 +967,7 @@ function resolveChoice(state: GameState, prompt: Prompt, value: string): void {
     }
     case 'playVisible': {
       const slot = state.slots.find((s) => s.cardId === value)!;
-      slot.taken = true;
+      takeSlot(state, slot);
       state.players[side].cards.push(value);
       log(state, `${SIDE_NAMES[side]} juga ${playedCardLabel(value)} gratis.`);
       emit(state, { t: 'card', slot: slot.id, mode: 'play', cardId: value });
@@ -613,7 +1017,7 @@ function resolveChoice(state: GameState, prompt: Prompt, value: string): void {
       return;
     }
     default:
-      throw new Error(`Step ${step.k} does not take choices`);
+      resolveAllyChoice(state, prompt, value);
   }
 }
 
@@ -624,16 +1028,17 @@ function processQueue(state: GameState): void {
     runStep(state, state.queue.shift()!);
     checkWinner(state);
   }
-  if (!state.winner && !state.prompt) endTurn(state);
+  if (state.winner || state.prompt) return;
+  // Allies: an Ally called before the turn's card or location leaves the turn open for it.
+  if (state.awaitMain && hasMainAction(state)) return;
+  state.awaitMain = false;
+  if (offerAlly(state)) return;
+  endTurn(state);
 }
 
 function endTurn(state: GameState): void {
-  for (const slot of state.slots) {
-    if (!slot.faceUp && isAccessible(state, slot)) {
-      slot.faceUp = true;
-      emit(state, { t: 'reveal', slot: slot.id });
-    }
-  }
+  revealAccessible(state);
+  if (hasAllies(state)) state.allyUsed = false;
   if (state.slots.every((s) => s.taken)) {
     if (state.chapter === 3) {
       finalScoring(state);
@@ -672,10 +1077,23 @@ export function applyAction(prev: GameState, action: Action): GameState {
 
   if (state.prompt) throw new IllegalAction('Primer cal resoldre la decisió pendent.');
 
+  if (action.type === 'ally') {
+    if (!hasAllies(state) || state.allyUsed) throw new IllegalAction('Aquest torn ja no pots recórrer a cap aliat.');
+    if (!allyChoices(state, side).some((o) => o.value === action.value)) throw new IllegalAction('No pots cridar aquest aliat.');
+    state.awaitMain = true;
+    callAlly(state, action.value);
+    processQueue(state);
+    return state;
+  }
+
+  const forced = activeForced(state);
   if (action.type === 'takeCard') {
     const slot = state.slots[action.slot];
     if (!slot || !isAccessible(state, slot)) throw new IllegalAction('Aquesta carta no és accessible.');
-    slot.taken = true;
+    if (forced && forced.slot !== slot) throw new IllegalAction('Aquest torn has de prendre la carta que t\'ha imposat Sauron.');
+    if (forced?.discardOnly && action.mode === 'play') throw new IllegalAction('Aquesta carta l\'has de descartar.');
+    state.awaitMain = false;
+    takeSlot(state, slot);
     if (action.mode === 'discard') {
       const coins = state.chapter * (hasToken(state, side, 'men_discard_double') ? 2 : 1);
       state.discard.push(slot.cardId);
@@ -696,34 +1114,45 @@ export function applyAction(prev: GameState, action: Action): GameState {
     }
   } else if (action.type === 'takeLocation') {
     if (!state.locationsFaceUp.includes(action.id)) throw new IllegalAction('Aquest lloc no està disponible.');
+    if (forced) throw new IllegalAction('Aquest torn has de prendre la carta que t\'ha imposat Sauron.');
+    if (locationLocked(state, side, action.id)) throw new IllegalAction('Sauron ha bloquejat aquest lloc.');
     const quote = locationCost(state, side, action.id);
     if (!quote.affordable) throw new IllegalAction('No pots pagar aquest lloc.');
-    const loc = LOCATIONS[action.id];
+    state.awaitMain = false;
     me.coins -= quote.coins;
-    me.locations.push(action.id);
-    state.locationsFaceUp = state.locationsFaceUp.filter((id) => id !== action.id);
-    log(state, `${SIDE_NAMES[side]} construeix ${loc.name}${loc.region ? ` (${REGION_NAMES[loc.region]})` : ''}` +
-      (quote.coins > 0 ? ` pagant ${coinWord(quote.coins)}` : '') + '.');
-    emit(state, { t: 'location', id: action.id });
-    if (quote.coins > 0) emit(state, { t: 'coins', side, n: -quote.coins });
-    if (loc.region) state.queue.push({ k: 'placeFortress', region: loc.region });
-    const effects: Step[] = [];
-    for (const e of loc.effects) {
-      if (e.type === 'place_units') effects.push({ k: 'placeUnits', n: e.n, regions: [e.region] });
-      else if (e.type === 'ring') effects.push({ k: 'ring', n: e.n });
-      else if (e.type === 'move') effects.push({ k: 'move', n: e.n });
-      else if (e.type === 'coins') effects.push({ k: 'coins', n: e.n });
-      else if (e.type === 'play_from_discard') effects.push({ k: 'playFromDiscard' });
-      else if (e.type === 'discard_opponent_grey') effects.push({ k: 'discardOppGrey' });
-      else if (e.type === 'alliance_any_race') effects.push({ k: 'allianceAnyRace' });
-      else if (e.type === 'play_visible') effects.push({ k: 'playVisible' });
-      else if (e.type === 'grond') effects.push({ k: 'grondRaze' });
-    }
-    state.queue.push(...joined(effects));
-    if (hasToken(state, side, 'dwarves_loc_turn')) state.queue.push({ k: 'extraTurn' });
+    state.queue.push(...buildLocation(state, side, action.id, quote.coins));
   }
   processQueue(state);
   return state;
+}
+
+/** Builds a key location already paid for (`coins`) and returns its effects to run. */
+function buildLocation(state: GameState, side: Side, id: string, coins: number): Step[] {
+  const loc = LOCATIONS[id];
+  const me = state.players[side];
+  me.locations.push(id);
+  state.locationsFaceUp = state.locationsFaceUp.filter((l) => l !== id);
+  log(state, `${SIDE_NAMES[side]} construeix ${loc.name}${loc.region ? ` (${REGION_NAMES[loc.region]})` : ''}` +
+    (coins > 0 ? ` pagant ${coinWord(coins)}` : '') + '.');
+  emit(state, { t: 'location', id });
+  if (coins > 0) emit(state, { t: 'coins', side, n: -coins });
+  const steps: Step[] = [];
+  if (loc.region) steps.push({ k: 'placeFortress', region: loc.region });
+  const effects: Step[] = [];
+  for (const e of loc.effects) {
+    if (e.type === 'place_units') effects.push({ k: 'placeUnits', n: e.n, regions: [e.region] });
+    else if (e.type === 'ring') effects.push({ k: 'ring', n: e.n });
+    else if (e.type === 'move') effects.push({ k: 'move', n: e.n });
+    else if (e.type === 'coins') effects.push({ k: 'coins', n: e.n });
+    else if (e.type === 'play_from_discard') effects.push({ k: 'playFromDiscard' });
+    else if (e.type === 'discard_opponent_grey') effects.push({ k: 'discardOppGrey' });
+    else if (e.type === 'alliance_any_race') effects.push({ k: 'allianceAnyRace' });
+    else if (e.type === 'play_visible') effects.push({ k: 'playVisible' });
+    else if (e.type === 'grond') effects.push({ k: 'grondRaze' });
+  }
+  steps.push(...joined(effects));
+  if (hasToken(state, side, 'dwarves_loc_turn')) steps.push({ k: 'extraTurn' });
+  return steps;
 }
 
 /** Every legal action for the player to move (used by the bot, tests and UI hints). */
@@ -731,15 +1160,20 @@ export function legalActions(state: GameState): Action[] {
   if (state.winner) return [];
   if (state.prompt) return state.prompt.options.map((o) => ({ type: 'choose', value: o.value }));
   const actions: Action[] = [];
-  for (const slot of state.slots) {
+  const forced = activeForced(state);
+  for (const slot of forced ? [forced.slot] : state.slots) {
     if (!isAccessible(state, slot)) continue;
-    if (cardCost(state, state.current, slot.cardId).affordable) {
+    if (!forced?.discardOnly && cardCost(state, state.current, slot.cardId).affordable) {
       actions.push({ type: 'takeCard', slot: slot.id, mode: 'play' });
     }
     actions.push({ type: 'takeCard', slot: slot.id, mode: 'discard' });
   }
-  for (const id of state.locationsFaceUp) {
+  for (const id of forced ? [] : state.locationsFaceUp) {
+    if (locationLocked(state, state.current, id)) continue;
     if (locationCost(state, state.current, id).affordable) actions.push({ type: 'takeLocation', id });
+  }
+  if (hasAllies(state) && !state.allyUsed) {
+    for (const o of allyChoices(state, state.current)) actions.push({ type: 'ally', value: o.value });
   }
   return actions;
 }

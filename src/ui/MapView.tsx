@@ -171,8 +171,12 @@ export function MapView({ state, clickable, onPick }: Props) {
         {/* Anduin */}
         <path className="map-river" d="M74 -6 C72 10 68 22 70 34 C72 46 64 56 62 68 C60 78 56 86 50 100" />
         {/* roads between regions */}
-        {CONNECTIONS.map(([a, b]) => (
-          <line key={a + b} className="map-road" x1={pos[a][0]} y1={pos[a][1]} x2={pos[b][0]} y2={pos[b][1]} />
+        {CONNECTIONS.map(([a, b], i) => (
+          <line
+            key={a + b}
+            className={`map-road${state.locks?.roads.some((l) => l.road === i) ? ' map-road-blocked' : ''}`}
+            x1={pos[a][0]} y1={pos[a][1]} x2={pos[b][0]} y2={pos[b][1]}
+          />
         ))}
         <Compass />
       </svg>

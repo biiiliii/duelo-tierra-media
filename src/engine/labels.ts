@@ -1,13 +1,21 @@
-import { CARDS, TOKENS } from './data.js';
-import type { Color, Race, RegionId, Side, Skill } from './types.js';
+import { CARDS, CONNECTIONS, TOKENS } from './data.js';
+import type { Color, Expansion, Race, RegionId, Side, Skill } from './types.js';
 
 export const SIDE_NAMES: Record<Side, string> = { fellowship: 'la Comunitat', sauron: 'Sauron' };
 export const SIDE_TITLES: Record<Side, string> = { fellowship: 'Comunitat de l\'Anell', sauron: 'Sauron' };
+
+export const EXPANSION_NAMES: Record<Expansion, string> = { shire: 'La Comarca', grond: 'Grond', allies: 'Aliats' };
 
 export const REGION_NAMES: Record<RegionId, string> = {
   lindon: 'Lindon', arnor: 'Arnor', rhovanion: 'Rhovanion', enedwaith: 'Enedwaith',
   rohan: 'Rohan', gondor: 'Gondor', mordor: 'Mordor',
 };
+
+/** "Arnor – Rhovanion": a road of the map, by its index in CONNECTIONS. */
+export function roadLabel(road: number): string {
+  const [a, b] = CONNECTIONS[road];
+  return `${REGION_NAMES[a]} – ${REGION_NAMES[b]}`;
+}
 
 export const RACE_NAMES: Record<Race | 'eagle', string> = {
   elves: 'Elfs', dwarves: 'Nans', hobbits: 'Hòbbits', men: 'Homes', ents: 'Ents', wizards: 'Mags', eagle: 'Àguila',

@@ -92,6 +92,17 @@ export function LocationBanner({ id, size = 22 }: { id: string; size?: Len }) {
   );
 }
 
+/** The lobby's banner for an optional extra (a promo tile or the Allies expansion). */
+export function ExpansionBanner({ id, size = 22 }: { id: Expansion; size?: Len }) {
+  if (id !== 'allies') return <LocationBanner id={id} size={size} />;
+  const b = PROMO_BANNER[id];
+  return (
+    <span className="banner" style={{ ['--banner' as string]: b.color, ['--emblem' as string]: b.emblem, ['--s' as string]: len(size) }} title="Aliats">
+      <b.glyph aria-hidden="true" />
+    </span>
+  );
+}
+
 /** Unit / fortress piece in a side colour. */
 export function Piece({ side, kind, size = 14 }: { side: Side; kind: 'unit' | 'fortress'; size?: Len }) {
   const Glyph: IconType = kind === 'unit' ? GLYPH.unit : GLYPH.fortress;

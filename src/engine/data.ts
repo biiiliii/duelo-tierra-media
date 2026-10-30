@@ -6,9 +6,10 @@ import expansionJson from '../../data/expansion_locations.json' with { type: 'js
 import tokensJson from '../../data/alliance_tokens.json' with { type: 'json' };
 import mapJson from '../../data/map.json' with { type: 'json' };
 import ringJson from '../../data/ring_track.json' with { type: 'json' };
+import alliesJson from '../../data/allies.json' with { type: 'json' };
 import formationsJson from '../../data/formations.json' with { type: 'json' };
 import type {
-  CardDef, Chapter, Expansion, LocationDef, Race, RegionId, Side, Skill, SpecialIcon, TokenDef,
+  AllyDef, CardDef, Chapter, Expansion, LocationDef, Race, RegionId, Side, Skill, SpecialIcon, TokenDef,
 } from './types.js';
 
 interface RawCard {
@@ -74,6 +75,17 @@ for (const ch of [1, 2, 3] as Chapter[]) {
 /** The base game's key locations; the promo tiles join the stack only when chosen. */
 export const BASE_LOCATIONS: string[] = locationsJson.locations.map((l) => l.id);
 export const EXPANSIONS: Expansion[] = expansionJson.locations.map((l) => l.id as Expansion);
+/** Every optional extra the lobby can switch on: the promo tiles and the Allies expansion. */
+export const ALL_EXPANSIONS: Expansion[] = [...EXPANSIONS, 'allies'];
+
+export const ALLIES: Record<string, AllyDef> = Object.fromEntries(
+  (alliesJson.allies as AllyDef[]).map((a) => [a.id, a]),
+);
+export const SIDE_ALLIES: Record<Side, string[]> = {
+  fellowship: (alliesJson.allies as AllyDef[]).filter((a) => a.side === 'fellowship').map((a) => a.id),
+  sauron: (alliesJson.allies as AllyDef[]).filter((a) => a.side === 'sauron').map((a) => a.id),
+};
+
 export const LOCATIONS: Record<string, LocationDef> = Object.fromEntries(
   ([...locationsJson.locations, ...expansionJson.locations] as LocationDef[]).map((l) => [l.id, l]),
 );
@@ -106,6 +118,13 @@ export const RING_BONUSES: Record<number, RingBonus> = Object.fromEntries(
 );
 
 export interface FormationRow { x: number[]; faceUp: boolean }
+/** Allies expansion: the two face-down cards of each chapter that get a Power token (rules p.6), as [row, x]. */
+export const POWER_SLOTS: Record<Chapter, [number, number][]> = {
+  1: [[1, -2], [1, 2]],
+  2: [[1, -2], [1, 2]],
+  3: [[3, -2], [3, 2]],
+};
+
 export const FORMATIONS = formationsJson.chapters as unknown as Record<`${Chapter}`, FormationRow[]>;
 
 export function otherSide(side: Side): Side {

@@ -4,7 +4,7 @@ import type { Expansion, Side } from '../engine/types';
 import type { SeatChoice } from '../net/protocol';
 import { AI_LEVEL_NAMES } from './AiGame';
 import { createRoom, loadExpansions, loadName, saveExpansions, saveName } from '../net/client';
-import { LocationBanner } from './Icon';
+import { ExpansionBanner } from './Icon';
 import './lobby.css';
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
 }
 
 const PROMOS: { value: Expansion; label: string; hint: string }[] = [
+  { value: 'allies', label: 'Aliats', hint: 'Cada bàndol té 3 aliats secrets que es criden amb fitxes de Poder, guanyades en revelar cartes.' },
   { value: 'shire', label: 'La Comarca', hint: 'Juga gratis una carta boca amunt, encara que estigui tapada.' },
   { value: 'grond', label: 'Grond', hint: 'Enderroca una fortalesa enemiga i posa-hi la teva.' },
 ];
@@ -110,15 +111,15 @@ export function Lobby({ onEnterRoom, onLocal, onAi }: Props) {
           </form>
 
           <section className="lobby-card promo-pick" aria-label="Expansió">
-            <h2>Expansió</h2>
-            <p>Fitxes de Lloc clau opcionals: es barregen amb la resta després de girar les 3 primeres. Valen per a les partides noves que creïs (sala, IA o local).</p>
+            <h2>Expansions</h2>
+            <p>L'expansió Aliats i les fitxes de Lloc clau opcionals (es barregen amb la resta després de girar les 3 primeres). Valen per a les partides noves que creïs (sala, IA o local).</p>
             <div className="promo-row">
               {PROMOS.map((p) => {
                 const on = expansions.includes(p.value);
                 return (
                   <label key={p.value} className={`promo-option${on ? ' checked' : ''}`}>
                     <input type="checkbox" checked={on} onChange={() => togglePromo(p.value)} />
-                    <LocationBanner id={p.value} size={26} />
+                    <ExpansionBanner id={p.value} size={26} />
                     <span><b>{p.label}</b><small>{p.hint}</small></span>
                     <span className="promo-switch" aria-hidden="true">{on ? 'Sí' : 'No'}</span>
                   </label>

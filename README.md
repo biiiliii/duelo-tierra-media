@@ -4,6 +4,8 @@ Versió digital del joc de taula per a 2 jugadors: **en línia amb sales**, al m
 
 Publicat a **https://duelo-tierra-media.vercel.app** — crea una sala, comparteix l'enllaç i juga.
 
+L'expansió **Aliats** també es pot activar a l'inici (casella *Aliats*): cada bàndol rep 3 aliats secrets i 1 fitxa de Poder; se'n guanyen més revelant les cartes marcades de cada capítol, i un cop per torn es pot cridar un aliat (efecte d'arribada, 1 fitxa) o retirar-lo (efecte de retirada, 2 fitxes). Dades a `data/allies.json`.
+
 Opcionalment s'hi poden afegir les fitxes promocionals **La Comarca** i **Grond** (casella *Expansió* de l'inici): es barregen amb la pila de llocs clau després de girar els 3 primers.
 
 ```bash

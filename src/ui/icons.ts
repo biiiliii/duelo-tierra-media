@@ -27,6 +27,7 @@ export const GLYPH = {
   volcano: GiVolcano,
   frodo: GiHoodedFigure,
   nazgul: GiSpectre,
+  power: GiSunRadiations,
 } satisfies Record<string, IconType>;
 
 export const SIDE_GLYPH: Record<Side, IconType> = { fellowship: GiHoodedFigure, sauron: GiBurningEye };
@@ -77,4 +78,5 @@ export const REGION_EMBLEM: Record<RegionId, string> = {
 export const PROMO_BANNER: Record<Expansion, { glyph: IconType; color: string; emblem: string }> = {
   shire: { glyph: GiHobbitDwelling, color: '#4f8f3a', emblem: '#f6e9b0' },
   grond: { glyph: GiSiegeRam, color: '#2b2622', emblem: '#e8833a' },
+  allies: { glyph: GiSunRadiations, color: '#1f2b4a', emblem: '#f2c14a' },
 };

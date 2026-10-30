@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EXPANSIONS } from '../engine/data.js';
+import { ALL_EXPANSIONS } from '../engine/data.js';
 import type { Action, Expansion, Side } from '../engine/types.js';
 import type { JoinResult, PollResult, RoomRequest, RoomView, SeatChoice } from './protocol.js';
 
@@ -65,7 +65,7 @@ export function saveName(name: string): void {
 export function loadExpansions(): Expansion[] {
   try {
     const saved = JSON.parse(localStorage.getItem('duelo:expansions') ?? '[]');
-    return EXPANSIONS.filter((e) => Array.isArray(saved) && saved.includes(e));
+    return ALL_EXPANSIONS.filter((e) => Array.isArray(saved) && saved.includes(e));
   } catch {
     return [];
   }

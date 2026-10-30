@@ -1,6 +1,6 @@
 import { IllegalAction, applyAction, newGame } from '../engine/engine.js';
 import { redact } from '../engine/view.js';
-import { EXPANSIONS } from '../engine/data.js';
+import { ALL_EXPANSIONS } from '../engine/data.js';
 import type { Action, Expansion, GameState, Side } from '../engine/types.js';
 import type { JoinResult, PollResult, RoomView, SeatChoice } from './protocol.js';
 
@@ -61,7 +61,7 @@ export function toView(record: RoomRecord, token?: string): RoomView {
       fellowship: { taken: Boolean(record.seats.fellowship.token), name: record.seats.fellowship.name },
       sauron: { taken: Boolean(record.seats.sauron.token), name: record.seats.sauron.name },
     },
-    state: redact(record.state),
+    state: redact(record.state, seatOf(record, token)),
   };
 }
 
@@ -69,7 +69,7 @@ export async function createRoom(
   store: RoomStore, side: SeatChoice, name: string, expansions: Expansion[] = [],
 ): Promise<JoinResult> {
   const mySide: Side = side === 'random' ? (Math.random() < 0.5 ? 'fellowship' : 'sauron') : side;
-  const promos = EXPANSIONS.filter((e) => Array.isArray(expansions) && expansions.includes(e));
+  const promos = ALL_EXPANSIONS.filter((e) => Array.isArray(expansions) && expansions.includes(e));
   const token = randomString(CODE_ALPHABET + 'abcdefghijkmnpqrstuvwxyz', 32);
   for (let attempt = 0; attempt < 10; attempt++) {
     const record: RoomRecord = {
