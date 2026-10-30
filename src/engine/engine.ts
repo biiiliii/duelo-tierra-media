@@ -637,15 +637,21 @@ function callAlly(state: GameState, value: string): void {
   state.queue.unshift(...allySteps(id, mode));
 }
 
-/** After the turn's card or location: reveal the cards and offer the Ally the player has not called yet. */
+/** After the turn's card, when the player asked to call an Ally then: reveal the cards and let it pick one. */
 function offerAlly(state: GameState): boolean {
-  if (!hasAllies(state) || state.allyUsed) return false;
+  if (!hasAllies(state) || state.allyUsed || !state.allyAfter) return false;
+  state.allyAfter = false;
   revealAccessible(state);
   const options = allyChoices(state, state.current);
   if (options.length === 0) return false;
-  ask(state, { k: 'allyOffer' }, 'Vols recórrer a un aliat abans d\'acabar el torn?', 'choice',
-    [...options, { value: 'end', label: 'No, acaba el torn' }]);
+  ask(state, { k: 'allyOffer' }, 'Tria l\'aliat que crides.', 'choice',
+    [...options, { value: 'end', label: 'Cap, acaba el torn' }]);
   return true;
+}
+
+/** Whether taking a card may come with an Ally call afterwards ("juga-la i crida un aliat"). */
+export function canCallAllyAfter(state: GameState): boolean {
+  return hasAllies(state) && !state.allyUsed && allyChoices(state, state.current).length > 0;
 }
 
 function hasMainAction(state: GameState): boolean {
@@ -1038,7 +1044,10 @@ function processQueue(state: GameState): void {
 
 function endTurn(state: GameState): void {
   revealAccessible(state);
-  if (hasAllies(state)) state.allyUsed = false;
+  if (hasAllies(state)) {
+    state.allyUsed = false;
+    state.allyAfter = false;
+  }
   if (state.slots.every((s) => s.taken)) {
     if (state.chapter === 3) {
       finalScoring(state);
@@ -1092,7 +1101,9 @@ export function applyAction(prev: GameState, action: Action): GameState {
     if (!slot || !isAccessible(state, slot)) throw new IllegalAction('Aquesta carta no és accessible.');
     if (forced && forced.slot !== slot) throw new IllegalAction('Aquest torn has de prendre la carta que t\'ha imposat Sauron.');
     if (forced?.discardOnly && action.mode === 'play') throw new IllegalAction('Aquesta carta l\'has de descartar.');
+    if (action.ally && !canCallAllyAfter(state)) throw new IllegalAction('Aquest torn ja no pots recórrer a cap aliat.');
     state.awaitMain = false;
+    state.allyAfter = Boolean(action.ally);
     takeSlot(state, slot);
     if (action.mode === 'discard') {
       const coins = state.chapter * (hasToken(state, side, 'men_discard_double') ? 2 : 1);
@@ -1161,12 +1172,16 @@ export function legalActions(state: GameState): Action[] {
   if (state.prompt) return state.prompt.options.map((o) => ({ type: 'choose', value: o.value }));
   const actions: Action[] = [];
   const forced = activeForced(state);
+  const withAlly = canCallAllyAfter(state);
   for (const slot of forced ? [forced.slot] : state.slots) {
     if (!isAccessible(state, slot)) continue;
-    if (!forced?.discardOnly && cardCost(state, state.current, slot.cardId).affordable) {
-      actions.push({ type: 'takeCard', slot: slot.id, mode: 'play' });
+    const modes: ('play' | 'discard')[] = [];
+    if (!forced?.discardOnly && cardCost(state, state.current, slot.cardId).affordable) modes.push('play');
+    modes.push('discard');
+    for (const mode of modes) {
+      actions.push({ type: 'takeCard', slot: slot.id, mode });
+      if (withAlly) actions.push({ type: 'takeCard', slot: slot.id, mode, ally: true });
     }
-    actions.push({ type: 'takeCard', slot: slot.id, mode: 'discard' });
   }
   for (const id of forced ? [] : state.locationsFaceUp) {
     if (locationLocked(state, state.current, id)) continue;

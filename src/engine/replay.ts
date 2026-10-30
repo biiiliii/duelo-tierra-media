@@ -21,20 +21,26 @@ export interface GameRecord {
 
 const PREFIX = 'DUELO1';
 
-/** "p3"/"d3": play or discard the card in slot 3; "l:bree": build a key location; "o:arnor": answer a decision. */
+/**
+ * "p3"/"d3": play or discard the card in slot 3 ("p3+": then call an Ally); "l:bree": build a key location;
+ * "o:arnor": answer a decision; "a:arrive:f_coins": call an Ally before the turn's card.
+ */
 export function encodeAction(a: Action): string {
-  if (a.type === 'takeCard') return `${a.mode === 'play' ? 'p' : 'd'}${a.slot}`;
+  if (a.type === 'takeCard') return `${a.mode === 'play' ? 'p' : 'd'}${a.slot}${a.ally ? '+' : ''}`;
   if (a.type === 'takeLocation') return `l:${a.id}`;
+  if (a.type === 'ally') return `a:${a.value}`;
   return `o:${a.value}`;
 }
 
 export function decodeAction(s: string): Action {
   if (s.startsWith('l:')) return { type: 'takeLocation', id: s.slice(2) };
   if (s.startsWith('o:')) return { type: 'choose', value: s.slice(2) };
+  if (s.startsWith('a:')) return { type: 'ally', value: s.slice(2) };
   const mode = s[0] === 'p' ? 'play' : s[0] === 'd' ? 'discard' : null;
-  const slot = Number(s.slice(1));
+  const ally = s.endsWith('+');
+  const slot = Number(s.slice(1, ally ? -1 : undefined));
   if (!mode || !Number.isInteger(slot)) throw new Error(`Jugada desconeguda: ${s}`);
-  return { type: 'takeCard', slot, mode };
+  return ally ? { type: 'takeCard', slot, mode, ally } : { type: 'takeCard', slot, mode };
 }
 
 /** One line of text: DUELO1;seed=…;exp=shire+grond;ia=…;tu=…;desfes=…;v=…;jugades=p3,d5,l:bree,o:arnor */

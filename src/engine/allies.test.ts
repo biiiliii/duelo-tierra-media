@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { chooseAction } from './ai';
 import { SIDE_ALLIES } from './data';
 import { applyAction, isAccessible, legalActions, newGame } from './engine';
-import type { GameState, Side } from './types';
+import { decodeAction, encodeAction } from './replay';
+import type { Action, GameState, Side } from './types';
 import { HIDDEN, redact } from './view';
 
 /** A game with Allies where the player to move holds `ally` (plus `power` tokens). */
@@ -22,8 +23,8 @@ function settle(state: GameState): GameState {
   return s;
 }
 
-function firstCardAction(state: GameState) {
-  return legalActions(state).find((a) => a.type === 'takeCard' && a.mode === 'discard')!;
+function firstCardAction(state: GameState): Extract<Action, { type: 'takeCard' }> {
+  return legalActions(state).find((a): a is Extract<Action, { type: 'takeCard' }> => a.type === 'takeCard' && a.mode === 'discard')!;
 }
 
 describe('Allies expansion', () => {
@@ -74,7 +75,9 @@ describe('Allies expansion', () => {
 
   it('offers the Ally after the main action, once per turn', () => {
     let s = withAlly('s_ring', 1);
-    s = applyAction(s, firstCardAction(s));
+    // A plain card ends the turn without asking.
+    expect(applyAction(s, firstCardAction(s)).current).toBe('fellowship');
+    s = applyAction(s, { ...firstCardAction(s), ally: true });
     expect(s.prompt?.step.k).toBe('allyOffer');
     s = applyAction(s, { type: 'choose', value: 'arrive:s_ring' });
     s = applyAction(s, { type: 'choose', value: 'ring' });
@@ -139,12 +142,22 @@ describe('Allies expansion', () => {
 
   it('hides the rival\'s Allies and the offer naming them', () => {
     let s = withAlly('s_ring', 1);
-    s = applyAction(s, firstCardAction(s));
+    s = applyAction(s, { ...firstCardAction(s), ally: true });
     const rivalView = redact(s, 'fellowship');
     expect(rivalView.players.sauron.allyHand!.every((a) => a === HIDDEN)).toBe(true);
     expect(rivalView.players.fellowship.allyHand!.every((a) => a !== HIDDEN)).toBe(true);
     expect(rivalView.prompt!.options).toEqual([]);
     expect(redact(s, 'sauron').prompt!.options.length).toBeGreaterThan(1);
+  });
+
+  it('game codes keep Ally calls, before and after the card', () => {
+    let s = withAlly('s_ring', 2, 'sauron', 21);
+    s.players.sauron.allyHand = ['s_ring', 's_grey'];
+    const actions: Action[] = [{ type: 'ally', value: 'arrive:s_grey' }];
+    expect(decodeAction(encodeAction(actions[0]))).toEqual(actions[0]);
+    const after: Action = { ...firstCardAction(s), ally: true };
+    expect(encodeAction(after)).toMatch(/^d\d+\+$/);
+    expect(decodeAction(encodeAction(after))).toEqual(after);
   });
 
   it('random games with Allies always finish', () => {

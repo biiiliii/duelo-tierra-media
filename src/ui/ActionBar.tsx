@@ -1,5 +1,5 @@
 import { cardCost } from '../engine/costs';
-import { activeForced } from '../engine/engine';
+import { activeForced, canCallAllyAfter } from '../engine/engine';
 import { cardLabel } from '../engine/labels';
 import { SIDE_TITLES } from '../engine/labels';
 import type { GameState, Side } from '../engine/types';
@@ -10,8 +10,9 @@ import { SIDE_GLYPH } from './icons';
 interface Props {
   state: GameState;
   selected: number | null;
-  onPlay: () => void;
-  onDiscard: () => void;
+  /** `ally`: call an Ally once the card's effects are done. */
+  onPlay: (ally?: boolean) => void;
+  onDiscard: (ally?: boolean) => void;
   onChoose: (value: string) => void;
   /** Online, rival's turn: name of who we are waiting for. Renders the bar read-only. */
   waitingFor?: string | null;
@@ -93,23 +94,38 @@ export function ActionBar({ state, selected, onPlay, onDiscard, onChoose, waitin
   const missing = quote.coins - state.players[side].coins;
   const wrongCard = forced !== null && forced.slot.id !== selected;
   const canPlay = quote.affordable && !wrongCard && !forced?.discardOnly;
+  const withAlly = canCallAllyAfter(state);
   return (
     <div className={`action-bar action-card side-${side}`} role="status">
       <CardFace cardId={slot.cardId} size="lg" have={costHave(state, side, slot.cardId)} />
       <div className="action-card-body">
         <Who side={side} />
+        {forcedMsg && <p className="action-msg">{forcedMsg}</p>}
         <div className="action-buttons">
-          {forcedMsg && <p className="action-msg">{forcedMsg}</p>}
-          <button type="button" className="primary" disabled={!canPlay} onClick={onPlay}>
-            {quote.viaChain
-              ? 'Juga-la gratis per cadena'
-              : quote.affordable
-                ? quote.coins === 0 ? 'Juga-la gratis' : <>Juga-la per <Coin n={quote.coins} size={23} /></>
-                : <>Et falten <Coin n={missing} size={23} /> per jugar-la</>}
-          </button>
-          <button type="button" disabled={wrongCard} onClick={onDiscard}>
-            Descarta-la i guanya <Coin n={discardCoins} size={23} />
-          </button>
+          <div className="action-col">
+            <button type="button" className="primary" disabled={!canPlay} onClick={() => onPlay()}>
+              {quote.viaChain
+                ? 'Juga-la gratis per cadena'
+                : quote.affordable
+                  ? quote.coins === 0 ? 'Juga-la gratis' : <>Juga-la per <Coin n={quote.coins} size={23} /></>
+                  : <>Et falten <Coin n={missing} size={23} /> per jugar-la</>}
+            </button>
+            {withAlly && (
+              <button type="button" className="action-ally" disabled={!canPlay} onClick={() => onPlay(true)}>
+                <Glyph name="power" size={16} /> Juga-la i crida un aliat
+              </button>
+            )}
+          </div>
+          <div className="action-col">
+            <button type="button" disabled={wrongCard} onClick={() => onDiscard()}>
+              Descarta-la i guanya <Coin n={discardCoins} size={23} />
+            </button>
+            {withAlly && (
+              <button type="button" className="action-ally" disabled={wrongCard} onClick={() => onDiscard(true)}>
+                <Glyph name="power" size={16} /> Descarta-la i crida un aliat
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -53,6 +53,17 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
+const DOUBLE_CLICK_KEY = 'duelo:doubleClickPlay';
+
+/** Whether a double click on a formation card plays it at once (on unless switched off). */
+function loadDoubleClick(): boolean {
+  try { return localStorage.getItem(DOUBLE_CLICK_KEY) !== 'off'; } catch { return true; }
+}
+
+function saveDoubleClick(on: boolean): void {
+  try { localStorage.setItem(DOUBLE_CLICK_KEY, on ? 'on' : 'off'); } catch { /* storage blocked */ }
+}
+
 const SPEED_LABEL: Record<Speed, string> = { normal: 'Normals', fast: 'Ràpides', off: 'Cap' };
 const NEXT_SPEED: Record<Speed, Speed> = { normal: 'fast', fast: 'off', off: 'normal' };
 
@@ -64,6 +75,7 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
   const nameOf = (side: Side) => waitingName?.(side) ?? SIDE_NAMES[side];
   const [selected, setSelected] = useState<number | null>(null);
   const [logOpen, setLogOpen] = useState(false);
+  const [doubleClick, setDoubleClick] = useState(loadDoubleClick);
   const [copied, setCopied] = useState<'ok' | 'fail' | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -103,6 +115,13 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
         </p>
         <div className="topbar-actions">
           {topbar}
+          <button
+            type="button"
+            onClick={() => { setDoubleClick(!doubleClick); saveDoubleClick(!doubleClick); }}
+            title="Amb doble clic a una carta de la formació, la jugues directament (sense cridar cap aliat)"
+          >
+            Doble clic: {doubleClick ? 'Juga' : 'No'}
+          </button>
           <button type="button" onClick={() => fx.setSpeed(NEXT_SPEED[fx.speed])} title="Canvia la velocitat de les animacions">
             Animacions: {SPEED_LABEL[fx.speed]}
           </button>
@@ -123,15 +142,22 @@ export function GameScreen({ state: real, canAct: realCanAct, you, onAction, top
           <ActionBar
             state={state}
             selected={canAct ? selected : null}
-            onPlay={() => selected !== null && onAction({ type: 'takeCard', slot: selected, mode: 'play' })}
-            onDiscard={() => selected !== null && onAction({ type: 'takeCard', slot: selected, mode: 'discard' })}
+            onPlay={(ally) => selected !== null && onAction({ type: 'takeCard', slot: selected, mode: 'play', ...(ally && { ally }) })}
+            onDiscard={(ally) => selected !== null && onAction({ type: 'takeCard', slot: selected, mode: 'discard', ...(ally && { ally }) })}
             onChoose={(value) => canAct && onAction({ type: 'choose', value })}
             waitingFor={!canAct && !state.winner ? nameOf(state.current) : null}
           />
           {error && <p className="error" role="alert">{error}</p>}
           <TurnSummary state={state} fx={fx} nameOf={nameOf} onOpenLog={() => setLogOpen(true)} />
           <div className="table">
-            <Formation state={state} selected={selected} onSelect={setSelected} disabled={busy} viewer={you ?? state.current} />
+            <Formation
+              state={state}
+              selected={selected}
+              onSelect={setSelected}
+              onPlay={doubleClick && !busy ? (slot) => onAction({ type: 'takeCard', slot, mode: 'play' }) : undefined}
+              disabled={busy}
+              viewer={you ?? state.current}
+            />
           </div>
           <AlliesZone
             state={state}

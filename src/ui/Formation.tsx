@@ -1,4 +1,5 @@
-import { isAccessible } from '../engine/engine';
+import { cardCost } from '../engine/costs';
+import { activeForced, isAccessible } from '../engine/engine';
 import { cardLabel } from '../engine/labels';
 import type { GameState, Side } from '../engine/types';
 import { CardBack, CardFace, costHave } from './CardView';
@@ -14,12 +15,18 @@ interface Props {
   state: GameState;
   selected: number | null;
   onSelect: (slot: number) => void;
+  /** Plays a card at once on double click (when the player may play it); missing when switched off. */
+  onPlay?: (slot: number) => void;
   disabled: boolean;
   /** Whose owned symbols to mark on the card costs. */
   viewer: Side;
 }
 
-export function Formation({ state, selected, onSelect, disabled, viewer }: Props) {
+export function Formation({ state, selected, onSelect, onPlay, disabled, viewer }: Props) {
+  const forced = activeForced(state);
+  const playable = (slot: number) => Boolean(onPlay) && !disabled && state.slots[slot].faceUp &&
+    (!forced || (forced.slot.id === slot && !forced.discardOnly)) &&
+    cardCost(state, state.current, state.slots[slot].cardId).affordable;
   const rows = Math.max(...state.slots.map((s) => s.row)) + 1;
   const half = (CARD_W + GAP) / 2;
   const width = 12 * half;
@@ -56,6 +63,7 @@ export function Formation({ state, selected, onSelect, disabled, viewer }: Props
               style={style}
               disabled={disabled}
               onClick={() => onSelect(slot.id)}
+              onDoubleClick={() => playable(slot.id) && onPlay!(slot.id)}
               aria-label={slot.faceUp ? cardLabel(slot.cardId) : 'Carta boca avall'}
               aria-pressed={selected === slot.id}
             >

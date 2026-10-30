@@ -201,6 +201,8 @@ export interface GameState {
   allyUsed?: boolean;
   /** An Ally was called before the turn's card or key location, which is still to come. */
   awaitMain?: boolean;
+  /** The player chose to call an Ally once the turn's card is played or discarded. */
+  allyAfter?: boolean;
   current: Side;
   extraTurns: number;
   queue: Step[];
@@ -246,7 +248,8 @@ export type FxBody =
 export type Fx = FxBody & { by: Side; at: number };
 
 export type Action =
-  | { type: 'takeCard'; slot: number; mode: 'play' | 'discard' }
+  /** `ally`: once the card's effects are done, call an Ally (Allies expansion). */
+  | { type: 'takeCard'; slot: number; mode: 'play' | 'discard'; ally?: boolean }
   | { type: 'takeLocation'; id: string }
   | { type: 'choose'; value: string }
   /** Allies expansion: call an Ally before the turn's main action ('arrive:<id>' or 'retreat:<id>'). */
