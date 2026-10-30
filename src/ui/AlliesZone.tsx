@@ -16,7 +16,8 @@ interface AllyProps {
 /** Allies expansion: Power tokens, revealed and hidden Allies, and what Sauron's tokens have locked. */
 function AllySideRow({ state, side, showHand, onAlly }: AllyProps) {
   const p = state.players[side];
-  const canCall = Boolean(onAlly) && state.current === side && !state.prompt && !state.allyUsed && !state.winner;
+  // Only your own hand can be called (online the rival's is hidden, and may still be on screen as a turn ends).
+  const canCall = Boolean(onAlly) && showHand && state.current === side && !state.prompt && !state.allyUsed && !state.winner;
   const choices = new Set(canCall ? allyChoices(state, side).map((o) => o.value) : []);
   const hand = p.allyHand ?? [];
   const lockedRaces = (state.locks?.races ?? []).filter((l) => l.side === side).map((l) => RACE_NAMES[l.race]);

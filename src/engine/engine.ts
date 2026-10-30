@@ -209,11 +209,13 @@ export function allyChoices(state: GameState, side: Side): PromptOption[] {
   const p = state.players[side];
   const power = p.power ?? 0;
   const out: PromptOption[] = [];
+  // A redacted view (online) names the rival's hidden Allies 'hidden': they cannot be offered.
+  const known = (id: string) => id in ALLIES;
   if (power >= 1) {
-    for (const id of p.allyHand ?? []) out.push({ value: `arrive:${id}`, label: `${ALLIES[id].name} (arribada): ${ALLIES[id].arrive}` });
+    for (const id of (p.allyHand ?? []).filter(known)) out.push({ value: `arrive:${id}`, label: `${ALLIES[id].name} (arribada): ${ALLIES[id].arrive}` });
   }
   if (power >= 2) {
-    for (const id of p.allies ?? []) out.push({ value: `retreat:${id}`, label: `${ALLIES[id].name} (retirada): ${ALLIES[id].retreat}` });
+    for (const id of (p.allies ?? []).filter(known)) out.push({ value: `retreat:${id}`, label: `${ALLIES[id].name} (retirada): ${ALLIES[id].retreat}` });
   }
   return out;
 }
